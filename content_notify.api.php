@@ -10,7 +10,6 @@
  * @{
  */
 
-
 /**
  * Hook function to manipulate the list of nodes being processed.
  *
