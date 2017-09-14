@@ -28,7 +28,8 @@ function content_notify_help($route_name, RouteMatchInterface $route_match) {
 function content_notify_entity_base_field_info(EntityTypeInterface $entity_type) {
   if ($entity_type->id() === 'node') {
     $checkSchedulerExists = \Drupal::service('content_notify.manager')->checkSchedulerExists();
-    if($checkSchedulerExists) {
+
+    if ($checkSchedulerExists) {
       $fields['notify_unpublish_on'] = BaseFieldDefinition::create('timestamp')
         ->setLabel(t('Notify unpublish on'))
         ->setDisplayConfigurable('form', TRUE)
@@ -51,7 +52,6 @@ function content_notify_entity_base_field_info(EntityTypeInterface $entity_type)
       ->setRevisionable(TRUE)
       ->setDescription(t('Date for notify invalid content'));
 
-
     return $fields;
   }
 }
@@ -63,12 +63,12 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
 
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
-  $hide_unpublish  = FALSE;
+  $hide_unpublish = FALSE;
   $hide_invalid = FALSE;
   /** @var \Drupal\node\NodeTypeInterface $type */
   $type = $form_state->getFormObject()->getEntity()->type->entity;
-  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish',$type->id());
-  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid',$type->id());
+  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish', $type->id());
+  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid', $type->id());
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
 
   if (!$checkUnpublishedNodeType || !$checkSchedulerExists && !isset($form['unpublish_on'])) {
@@ -80,7 +80,7 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
     unset($form['notify_invalid_on']);
     $hide_invalid = TRUE;
   }
-  if($hide_invalid && $hide_unpublish) {
+  if ($hide_invalid && $hide_unpublish) {
     return;
   }
 
@@ -95,19 +95,20 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
   ];
 
   // Attach the fields to group.
-  if(!$hide_unpublish) {
+  if (!$hide_unpublish) {
     $form['notify_unpublish_on']['#group'] = 'content_notify_settings';
   }
-  if(!$hide_invalid) {
+  if (!$hide_invalid) {
     $form['notify_invalid_on']['#group'] = 'content_notify_settings';
   }
 
   if (!\Drupal::currentUser()->hasPermission('content notification of nodes')) {
-    // Do not show the content notification fields for users who do not have permission.
+    // Do not show the content notification fields
+    // for users who do not have permission.
     $form['content_notify_settings']['#access'] = FALSE;
   }
-
 }
+
 /**
  * Implements hook_ENTITY_TYPE_presave() for node entities.
  */
@@ -116,11 +117,11 @@ function content_notify_node_presave(EntityInterface $node) {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
-  // unpublish notify.
+  // Unpublish notify.
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
-  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish',$node->getType());
+  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish', $node->getType());
 
-  if($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
+  if ($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
     if (empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
       if($days) {
@@ -128,20 +129,20 @@ function content_notify_node_presave(EntityInterface $node) {
       }
     }
 
-    if(empty($node->notify_unpublish_on->value)) {
+    if (empty($node->notify_unpublish_on->value)) {
       $notify_unpublish_time = $content_notify_manager->getConfig('notify_unpublish_time');
       $notify_unpublish_on = (!empty($node->unpublish_on->value)) ? (date("U", strtotime("-" . $notify_unpublish_time . " days", $node->unpublish_on->value))) : 0;
       $node->set('notify_unpublish_on', $notify_unpublish_on);
     }
   }
 
-  // old content notify.
-  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid',$node->getType());
+  // Old content notify.
+  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid', $node->getType());
 
-  if($node->isPublished() && $checkOldNodeType) {
-    $notify_invalid_time =  $content_notify_manager->getConfig('notify_invalid_time');
+  if ($node->isPublished() && $checkOldNodeType) {
+    $notify_invalid_time = $content_notify_manager->getConfig('notify_invalid_time');
 
-    if(empty($node->notify_invalid_on->value)) {
+    if (empty($node->notify_invalid_on->value)) {
       $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days", $node->created->value));
       $node->set('notify_invalid_on', $notify_invalid_on);
     }
@@ -163,13 +164,13 @@ function content_notify_cron() {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
-  $unpublish_last_run = $state->get('content_notify_unpublish_last_run',0);
+  $unpublish_last_run = $state->get('content_notify_unpublish_last_run', 0);
   $current_unpublish_time = $content_notify_manager->notifyUnpublished($unpublish_last_run);
-  $state->set('content_notify_unpublish_last_run',$current_unpublish_time);
+  $state->set('content_notify_unpublish_last_run', $current_unpublish_time);
 
-  $invalid_last_run = $state->get('content_notify_invalid_last_run',0);
+  $invalid_last_run = $state->get('content_notify_invalid_last_run', 0);
   $current_invalid_time = $content_notify_manager->notifyInvalid($invalid_last_run);
-  $state->set('content_notify_invalid_last_run',$current_invalid_time);
+  $state->set('content_notify_invalid_last_run', $current_invalid_time);
 
   // Reset the static scheduler_cron flag.
   drupal_static_reset(__FUNCTION__);
@@ -178,7 +179,8 @@ function content_notify_cron() {
 /**
  * Return whether content_notify cron is running.
  *
- * This function can be called from any content_notify function, from any contrib
+ * This function can be called from any content_notify function,
+ * from any contrib
  * module or from custom PHP in a view or rule.
  *
  * @return bool
@@ -199,7 +201,7 @@ function content_notify_mail($key, &$message, $params) {
   switch ($key) {
 
     case 'unpublish':
-       $message['subject'] = $params['subject'];
+      $message['subject'] = $params['subject'];
       $message['body'][] = $params['message'];
       break;
 

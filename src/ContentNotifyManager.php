@@ -46,7 +46,7 @@ class ContentNotifyManager {
 
 
   /**
-   * The mail manager
+   * The mail manager.
    *
    * @var \Drupal\Core\Mail\MailManagerInterface
    */
@@ -85,10 +85,9 @@ class ContentNotifyManager {
   /**
    * Notify unpublishing of nodes.
    *
-   * @return integer
+   * @return int
    *   current time for the execution to save in stage variable.
    */
-
   public function notifyUnpublished($last_cron_run) {
 
     $bundles = $this->getConfig('notify_unpublish_bundles');
@@ -107,10 +106,9 @@ class ContentNotifyManager {
   /**
    * Notify old nodes of system.
    *
-   * @return integer
+   * @return int
    *   current time for the execution to save in stage variable.
    */
-
   public function notifyInvalid($last_cron_run) {
 
     $bundles = $this->getConfig('notify_invalid_bundles');
@@ -134,9 +132,7 @@ class ContentNotifyManager {
    *   The array contains all receiver information with nodes.
    * @param string $action
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
-   *
    */
-
   public function processEmail($email_list, $action) {
 
     $params['subject'] = $this->getConfig('notify_' . $action . '_subject');
@@ -152,7 +148,7 @@ class ContentNotifyManager {
         if ($result['result'] !== TRUE) {
           $this->logger->error('There was a problem sending notification:@action to email:@reciever', [
             '@ction' => $action,
-            '@reciever' => $receiver
+            '@reciever' => $receiver,
           ]);
         }
         else {
@@ -170,7 +166,8 @@ class ContentNotifyManager {
    * Checks whether email has been send by other modules.
    *
    * This provides a way for other modules to send notification of content
-   * for invalid and reminder of unpublish, by implementing hook_content_notify_send_unpublish() or
+   * for invalid and reminder of unpublish,
+   * by implementing hook_content_notify_send_unpublish() or
    * hook_content_notify_send_invalid().
    *
    * @param array $params
@@ -184,7 +181,6 @@ class ContentNotifyManager {
    * @see hook_content_notify_send_publish()
    * @see hook_content_notify_send_invalid()
    */
-
   public function isSend($params, $action) {
     // Default to TRUE means you will send through drupal mail.
     $result = TRUE;
@@ -195,7 +191,6 @@ class ContentNotifyManager {
       $function = $module . '_' . $hook;
       $result &= $function($params);
     }
-
     return $result;
   }
 
@@ -207,9 +202,7 @@ class ContentNotifyManager {
    *   Contains all information which will be in body of email.
    * @param array $nodes
    *   Nodes information of how it will be in body of email.
-   *
    */
-
   protected function bodyTokenReplace($body, $nodes) {
     $newline = '
     ';
@@ -222,8 +215,10 @@ class ContentNotifyManager {
   /**
    * Process the result which receive from query about nids.
    *
-   * This provides a way for other modules to alter the nodes information which
-   * attached to body of the email for invalid and reminder of unpublish,
+   * This provides a way for other modules to alter
+   * the nodes information which
+   * attached to body of the email for invalid
+   * and reminder of unpublish,
    * by implementing hook_content_notify_digest_nodes_alter()
    *
    * @param array $nids
@@ -232,11 +227,11 @@ class ContentNotifyManager {
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    *
    * @return array
-   *   $email_list contains information of receiver with nodes links attached in email body.
+   *   $email_list contains information of receiver
+   *   with nodes links attached in email body.
    *
    * @see hook_content_notify_digest_nodes_alter($link,$action)
    */
-
   public function processResult($nids, $action) {
 
     $email_list = [];
@@ -274,7 +269,6 @@ class ContentNotifyManager {
    * @return array
    *   $nids  nodes ids to handle.
    */
-
   public function getQuery($bundles, $action, $last_cron_run, $current_time) {
 
     $query = $this->entityTypeManager->getStorage('node')
@@ -294,7 +288,8 @@ class ContentNotifyManager {
   }
 
   /**
-   * Rule of finding email receiver of notification email for unpulished or invalid content.
+   * Rule of finding email receiver of notification email
+   * for unpulished or invalid content.
 
    * This provides a way for other modules to alter the receiver email
    * for invalid or unpublish notification,
@@ -329,7 +324,6 @@ class ContentNotifyManager {
    * @return bool
    *  True if scheduler module exists otherwise False.
    */
-
   public function checkSchedulerExists() {
     return $this->moduleHandler->moduleExists('scheduler');
 
@@ -358,10 +352,8 @@ class ContentNotifyManager {
    * @return value
    *  Value of the variable.
    */
-
   public function getConfig($config_name) {
     return $this->config->get($config_name);
   }
-
 
 }
