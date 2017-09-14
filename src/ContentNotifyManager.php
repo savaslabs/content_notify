@@ -156,7 +156,7 @@ class ContentNotifyManager {
           ]);
         }
         else {
-          $this->logger->notice('Notification:@action has been send to email:@reciever and @body', [
+          $this->logger->notice('Notification:@action has been send to email:@receiver and @body', [
             '@action' => $action,
             '@reciever' => $receiver,
             '@body' => $params['message'],

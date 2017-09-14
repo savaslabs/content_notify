@@ -12,7 +12,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class NotifyConfigForm extends ConfigFormBase {
 
-
   /**
    * Module handler service object.
    *
@@ -57,15 +56,15 @@ class NotifyConfigForm extends ConfigFormBase {
     if ($this->contentNotifyManager->checkSchedulerExists()) {
 
       $form['notify'] = array(
-        '#title' => t('Notifications about content about to be unpublished'),
-        '#description' => t('You need to set which bundles notices should be sent on. The bundles you choose need to have scheduler settings enabled.'),
+        '#title' =>  $this->t('Notifications about content about to be unpublished'),
+        '#description' =>  $this->t('You need to set which bundles notices should be sent on. The bundles you choose need to have scheduler settings enabled.'),
         '#type' => 'details',
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
       );
 
       $form['notify']['notify_unpublish_bundles'] = array(
-        '#title' => t('Bundles to find unpublish dates in'),
+        '#title' =>  $this->t('Bundles to find unpublish dates in'),
         '#type' => 'checkboxes',
         '#options' => node_type_get_names(),
         '#default_value' => $config->get('notify_unpublish_bundles'),
@@ -73,97 +72,97 @@ class NotifyConfigForm extends ConfigFormBase {
 
 
       $form['notify']['set_unpublish_time'] = array(
-        '#title' => t('Days from creation date to auto expire node'),
+        '#title' =>  $this->t('Days from creation date to auto expire node'),
         '#type' => 'number',
         '#default_value' => $config->get('set_unpublish_time'),
-        '#description' => t('if the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
+        '#description' =>  $this->t('if the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
       );
 
       $form['notify']['notify_unpublish_time'] = array(
-        '#title' => t('Days before unpublishing to send notification'),
+        '#title' =>  $this->t('Days before unpublishing to send notification'),
         '#type' => 'number',
         '#default_value' => $config->get('notify_unpublish_time'),
-        '#description' => t('How many days before unpublishing a notification e-mail be sent to the user?'),
+        '#description' =>  $this->t('How many days before unpublishing a notification e-mail be sent to the user?'),
       );
 
       $form['notify']['email_settings'] = array(
         '#type' => 'details',
-        '#description' => t('Mail will always go as digest email with all nodes per specific user'),
-        '#title' => t('Mail settings'),
+        '#description' =>  $this->t('Mail will always go as digest email with all nodes per specific user'),
+        '#title' =>  $this->t('Mail settings'),
         '#collapsed' => FALSE,
       );
 
       $form['notify']['email_settings']['notify_unpublish_receiver'] = array(
-        '#title' => t('Receiver email address for notification'),
+        '#title' =>  $this->t('Receiver email address for notification'),
         '#type' => 'email',
         '#default_value' => $config->get('notify_unpublish_receiver'),
-        '#description' => t('this email address will get notification. If you want owner of node to  get email then leave this field empty'),
+        '#description' =>  $this->t('this email address will get notification. If you want owner of node to  get email then leave this field empty'),
       );
 
       $form['notify']['email_settings']['notify_unpublish_subject'] = array(
-        '#title' => t('Subject'),
+        '#title' =>  $this->t('Subject'),
         '#type' => 'textfield',
         '#default_value' => $config->get('notify_unpublish_subject'),
-        '#description' => t('What text should be sent as subject of notification.'),
+        '#description' =>  $this->t('What text should be sent as subject of notification.'),
       );
 
       $form['notify']['email_settings']['notify_unpublish_body'] = array(
-        '#title' => t('Body'),
+        '#title' =>  $this->t('Body'),
         '#type' => 'textarea',
         '#default_value' => $config->get('notify_unpublish_body'),
-        '#description' => t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available.'),
+        '#description' =>  $this->t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available.'),
       );
 
     }
 
     $form['invalid'] = array(
-      '#title' => t('Notify user of old content'),
-      '#description' => t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
+      '#title' =>  $this->t('Notify user of old content'),
+      '#description' =>  $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
       '#type' => 'details',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
 
     $form['invalid']['notify_invalid_bundles'] = array(
-      '#title' => t('Bundles to automatically send notification of old content about'),
+      '#title' =>  $this->t('Bundles to automatically send notification of old content about'),
       '#type' => 'checkboxes',
       '#options' => node_type_get_names(),
       '#default_value' => $config->get('notify_invalid_bundles'),
-      '#description' => t('On what bundles should we notify about old content.'),
+      '#description' =>  $this->t('On what bundles should we notify about old content.'),
     );
 
     $form['invalid']['notify_invalid_time'] = array(
-      '#title' => t('Days from publish date to set send mail about content validity.'),
+      '#title' =>  $this->t('Days from publish date to set send mail about content validity.'),
       '#type' => 'number',
       '#default_value' => $config->get('notify_invalid_time'),
-      '#description' => t('How many days after publishing should a mail go out?.'),
+      '#description' =>  $this->t('How many days after publishing should a mail go out?.'),
     );
     $form['invalid']['email_settings'] = array(
       '#type' => 'details',
-      '#description' => t('Mail will always go as digest email with all nodes per specific user'),
-      '#title' => t('Mail settings'),
+      '#description' =>  $this->t('Mail will always go as digest email with all nodes per specific user'),
+      '#title' =>  $this->t('Mail settings'),
       '#collapsed' => FALSE,
     );
 
     $form['invalid']['email_settings']['notify_invalid_receiver'] = array(
-      '#title' => t('Receiver email address for notification old content'),
+      '#title' =>  $this->t('Receiver email address for notification old content'),
       '#type' => 'email',
       '#default_value' => $config->get('notify_invalid_receiver'),
-      '#description' => t('this email address will get notification. If you want content owner get email then leave this field empty'),
+      '#description' =>  $this->t('this email address will get notification. If you want content owner get email then leave this field empty'),
     );
 
     $form['invalid']['email_settings']['notify_invalid_subject'] = array(
-      '#title' => t('Subject'),
+      '#title' =>  $this->t('Subject'),
       '#type' => 'textfield',
       '#default_value' => $config->get('notify_invalid_subject'),
-      '#description' => t('What text should be sent as subject notification.'),
+      '#description' =>  $this->t('What text should be sent as subject notification.'),
     );
 
     $form['invalid']['email_settings']['notify_invalid_body'] = array(
-      '#title' => t('Body'),
+      '#title' =>  $this->t('Body'),
       '#type' => 'textarea',
       '#default_value' => $config->get('notify_invalid_body'),
-      '#description' => t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available'),
+      '#description' =>  $this->t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available'),
     );
 
     $form['array_filter'] = ['#type' => 'value', '#value' => TRUE];

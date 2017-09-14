@@ -13,7 +13,8 @@ CONTENTS OF THIS FILE
 INTRODUCTION
 ------------
 
-Content notify gives content editors the ability to schedule the notification of nodes so that
+Content notify gives content editors the ability
+to schedule the notification of nodes so that
 content editors have been notified of content.
 
 Module have two notification process.
@@ -78,7 +79,11 @@ CONFIGURATION
      Administration » Configuration » Content Authoring
      URL: /admin/config/content/content-notify
 
-   - Basic settings for choosing content types, mail settings, duration of notification.
+   - Basic settings for choosing
+      content types,
+      mail settings,
+      duration of notification.
+
    - Email will go as digest email per user depends of content in cron run.
 
 
@@ -96,7 +101,3 @@ MAINTAINERS
 
 Current maintainers:
 Takim Islam -           https://www.drupal.org/u/takim
-
-
-
-

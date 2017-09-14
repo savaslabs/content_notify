@@ -113,8 +113,6 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
  */
 function content_notify_node_presave(EntityInterface $node) {
 
-  $entity = $node->type->entity;
-
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
@@ -161,8 +159,6 @@ function content_notify_cron() {
   $content_notify_cron = &drupal_static(__FUNCTION__, FALSE);
   $content_notify_cron = TRUE;
 
-
-  $logger = \Drupal::service('logger.factory')->get('content_notify');
   $state = \Drupal::service('state');
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
