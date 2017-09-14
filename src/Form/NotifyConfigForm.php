@@ -73,7 +73,6 @@ class NotifyConfigForm extends ConfigFormBase {
         '#default_value' => $config->get('notify_unpublish_bundles'),
       ];
 
-
       $form['notify']['set_unpublish_time'] = [
         '#title' => $this->t('Days from creation date to auto expire node'),
         '#type' => 'number',
@@ -171,7 +170,6 @@ class NotifyConfigForm extends ConfigFormBase {
 
     return parent::buildForm($form, $form_state);
   }
-
 
   /**
    * {@inheritdoc}

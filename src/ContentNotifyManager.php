@@ -6,6 +6,7 @@ use Drupal\Core\Config\ConfigFactory;
 use Drupal\Core\Entity\EntityTypeManager;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Url;
+use Drupal\node\NodeInterface;
 use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -133,7 +134,7 @@ class ContentNotifyManager {
    * @param string $action
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
-  public function processEmail($email_list, $action) {
+  public function processEmail(array $email_list, $action) {
 
     $params['subject'] = $this->getConfig('notify_' . $action . '_subject');
     $body = $this->getConfig('notify_' . $action . '_body');
@@ -181,7 +182,7 @@ class ContentNotifyManager {
    * @see hook_content_notify_send_publish()
    * @see hook_content_notify_send_invalid()
    */
-  public function isSend($params, $action) {
+  public function isSend(array $params, $action) {
     // Default to TRUE means you will send through drupal mail.
     $result = TRUE;
     // Check that other modules send notification already.
@@ -194,7 +195,6 @@ class ContentNotifyManager {
     return $result;
   }
 
-
   /**
    * Replace the token for body field.
    *
@@ -203,7 +203,7 @@ class ContentNotifyManager {
    * @param array $nodes
    *   Nodes information of how it will be in body of email.
    */
-  protected function bodyTokenReplace($body, $nodes) {
+  protected function bodyTokenReplace($body, array $nodes) {
     $newline = '
     ';
     $digest_nodes = implode($nodes, $newline);
@@ -232,7 +232,7 @@ class ContentNotifyManager {
    *
    * @see hook_content_notify_digest_nodes_alter($link,$action)
    */
-  public function processResult($nids, $action) {
+  public function processResult(array $nids, $action) {
 
     $email_list = [];
     $nodes = $this->entityTypeManager->getStorage('node')
@@ -246,37 +246,37 @@ class ContentNotifyManager {
 
       $link = $node->getTitle() . ' - ' . $node_url;
 
-      // Allow other modules to alter link which will be replace digest-title token.
+      // Allow other modules to alter link
+      // which will be replace digest-title token.
       $this->moduleHandler->alter('content_notify_digest_nodes', $link, $node);
       $email_list[$receiver]['nodes'][$node->id()] = $link;
     }
     return $email_list;
   }
 
-
   /**
-   *  Get the nids to process for notification email.
+   * Get the nids to process for notification email.
    *
    * @param array $bundles
-   *    Node types to handle.
+   *   Node types to handle.
    * @param string $action
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
-   * @param integer $last_cron_run
+   * @param int $last_cron_run
    *   When last execute the query from state variable.
-   * @param integer $current_time
+   * @param int $current_time
    *   Current time of the system.
    *
    * @return array
    *   $nids  nodes ids to handle.
    */
-  public function getQuery($bundles, $action, $last_cron_run, $current_time) {
+  public function getQuery(array $bundles, $action, $last_cron_run, $current_time) {
 
     $query = $this->entityTypeManager->getStorage('node')
       ->getQuery()
       ->condition('notify_' . $action . '_on', $current_time, '<=')
       ->condition('notify_' . $action . '_on', $last_cron_run, '>')
       ->condition('type', $bundles, 'IN')
-      ->condition('status',1)
+      ->condition('status', 1)
       ->sort('notify_' . $action . '_on')
       ->sort('nid');
     // Disable access checks for this query.
@@ -289,18 +289,17 @@ class ContentNotifyManager {
 
   /**
    * Rule of finding email receiver of notification email
-   * for unpulished or invalid content.
-
+   *
    * This provides a way for other modules to alter the receiver email
    * for invalid or unpublish notification,
    * by implementing hook_content_notify_email_receiver_alter()
    *
-   * @param type $node
-   *  node object to get receiver
+   * @param \Drupal\node\NodeInterface $node
+   *  Node object to get receiver.
    * @param string $action
-   *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
+   *  The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
-  function getReceiver($node, $action) {
+  function getReceiver(NodeInterface $node, $action) {
 
     $receiver = $this->getConfig('notify_' . $action . '_receiver');
     if (!empty($receiver)) {
@@ -310,13 +309,11 @@ class ContentNotifyManager {
       $email = $node->getOwner()->mail->value;
     }
 
-    // Allow other modules to alter the email receiver of unpublished notification.
+    // Allow other modules to alter the email receiver.
     $this->moduleHandler->alter('content_notify_email_receiver', $email, $node, $action);
-
 
     return $email;
   }
-
 
   /**
    * Check whether scheduler module is exists in the system or not.
@@ -326,7 +323,6 @@ class ContentNotifyManager {
    */
   public function checkSchedulerExists() {
     return $this->moduleHandler->moduleExists('scheduler');
-
   }
 
   /**
@@ -347,7 +343,7 @@ class ContentNotifyManager {
    * Get the value of configuration variable.
    *
    * @param string $config_name
-   *   config variable name.
+   *   Config variable name.
    *
    * @return value
    *  Value of the variable.

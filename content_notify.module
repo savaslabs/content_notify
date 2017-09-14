@@ -124,7 +124,7 @@ function content_notify_node_presave(EntityInterface $node) {
   if ($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
     if (empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
-      if($days) {
+      if ($days) {
         $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
       }
     }

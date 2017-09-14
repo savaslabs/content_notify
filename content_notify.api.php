@@ -21,17 +21,13 @@
  *   An array of node ids being processed.
  * @param string $action
  *   The action being done to the node - 'invalid' or 'unpublish'.
- *
- * @return array
- *   The full array of node ids to process, adjusted as required.
  */
 function hook_content_notify_nid_list_alter(array &$nids, $action) {
   // Do some processing to add or remove node ids.
 }
 
 /**
- * Hook function to check whether email has been send from other modules
- * for unpublish notification.
+ * Hook function to check whether email has been send from other modules.
  *
  * This hook gives modules the ability to prevent to use drupal mail
  * for notification rather you can implement you own function to send
@@ -41,16 +37,15 @@ function hook_content_notify_nid_list_alter(array &$nids, $action) {
  *  Contains mail elements which needs to used for notification.
  *
  * @return bool
- *   TRUE if the drupal mail should be used, FALSE if mail already send
- * and you want to prevent drupal mail system.
+ *  TRUE if the drupal mail should be used, FALSE if mail already send
+ *  and you want to prevent drupal mail system.
  */
-function hook_content_notify_send_unpublish($params) {
+function hook_content_notify_send_unpublish(array $params) {
   return TRUE;
 }
 
 /**
- * Hook function to check whether email has been send from other modules
- * for invalid notification.
+ * Hook function to check whether email has been send from other modules.
  *
  * This hook gives modules the ability to prevent to use drupal mail
  * for notification rather you can implement you own function to send
@@ -60,25 +55,24 @@ function hook_content_notify_send_unpublish($params) {
  *  Contains mail elements which needs to used for notification.
  *
  * @return bool
- *   TRUE if the drupal mail should be used, FALSE if mail is already send
- * and you want to prevent drupal mail system.
+ *  TRUE if the drupal mail should be used, FALSE if mail is already send
+ *  and you want to prevent drupal mail system.
  */
-function hook_content_notify_send_invalid($params) {
+function hook_content_notify_send_invalid(array $params) {
   return TRUE;
 }
 
 /**
  * Hook function to alter the receiver email address.
  *
- * @param email $email
- *   receiver email address.
+ * @param string $email
+ *   Receiver email address.
  * @param \Drupal\node\NodeInterface $node
  *   The node that is about to be processed.
  * @param string $action
  *   The action being done to the node - 'invalid' or 'unpublish'.
  */
-
-function hook_content_notify_email_receiver_alter(&$email, $node, $action){
+function hook_content_notify_email_receiver_alter(&$email,NodeInterface $node, $action) {
 }
 
 /**
@@ -88,15 +82,13 @@ function hook_content_notify_email_receiver_alter(&$email, $node, $action){
  * how it is going to attached in mail body.
  *
  * @param string $link
- *   basic link output.
+ *   Basic link output.
  * @param \Drupal\node\NodeInterface $node
  *   The node that is about to be processed.
- *
  */
 function hook_content_notify_digest_nodes_alter(&$link, NodeInterface $node) {
   // Do some processing with link.
 }
-
 
 /**
  * @} End of "addtogroup hooks".
