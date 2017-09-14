@@ -168,16 +168,12 @@ function content_notify_cron() {
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
   $unpublish_last_run = $state->get('content_notify_unpublish_last_run',0);
-  //$logger->notice('Old content_notify_unpublish_last_run:@date',['@date' => date('Y-m-d H:i:s',$unpublish_last_run)]);
   $current_unpublish_time = $content_notify_manager->notifyUnpublished($unpublish_last_run);
   $state->set('content_notify_unpublish_last_run',$current_unpublish_time);
-  //$logger->notice('New content_notify_unpublish_last_run:@date',['@date' => date('Y-m-d H:i:s',$current_unpublish_time)]);
 
   $invalid_last_run = $state->get('content_notify_invalid_last_run',0);
-  //$logger->notice('Old content_notify_invalid_last_run:@date',['@date' => date('Y-m-d H:i:s',$invalid_last_run)]);
   $current_invalid_time = $content_notify_manager->notifyInvalid($invalid_last_run);
   $state->set('content_notify_invalid_last_run',$current_invalid_time);
-//  $logger->notice('New content_notify_invalid_last_run:@date',['@date' => date('Y-m-d H:i:s',$current_invalid_time)]);
 
   // Reset the static scheduler_cron flag.
   drupal_static_reset(__FUNCTION__);
