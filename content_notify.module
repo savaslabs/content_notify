@@ -1,0 +1,219 @@
+<?php
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\Core\Field\BaseFieldDefinition;
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_help().
+ */
+function content_notify_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the content_notify module.
+    case 'help.page.content_notify':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('content notification functionality') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_entity_base_field_info().
+ */
+function content_notify_entity_base_field_info(EntityTypeInterface $entity_type) {
+  if ($entity_type->id() === 'node') {
+    $checkSchedulerExists = \Drupal::service('content_notify.manager')->checkSchedulerExists();
+    if($checkSchedulerExists) {
+      $fields['notify_unpublish_on'] = BaseFieldDefinition::create('timestamp')
+        ->setLabel(t('Notify unpublish on'))
+        ->setDisplayConfigurable('form', TRUE)
+        ->setDisplayOptions('form', [
+          'type' => 'datetime_timestamp_no_default',
+          'weight' => 30,
+        ])
+        ->setTranslatable(TRUE)
+        ->setRevisionable(TRUE)
+        ->setDescription(t('Date for notify unpublish content'));
+    }
+    $fields['notify_invalid_on'] = BaseFieldDefinition::create('timestamp')
+      ->setLabel(t('Notify still valid on'))
+      ->setDisplayConfigurable('form', TRUE)
+      ->setDisplayOptions('form', [
+        'type' => 'datetime_timestamp_no_default',
+        'weight' => 30,
+      ])
+      ->setTranslatable(TRUE)
+      ->setRevisionable(TRUE)
+      ->setDescription(t('Date for notify invalid content'));
+
+
+    return $fields;
+  }
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_form().
+ */
+function content_notify_form_node_form_alter(&$form, FormStateInterface $form_state) {
+
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+  $hide_unpublish  = FALSE;
+  $hide_invalid = FALSE;
+  /** @var \Drupal\node\NodeTypeInterface $type */
+  $type = $form_state->getFormObject()->getEntity()->type->entity;
+  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish',$type->id());
+  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid',$type->id());
+  $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
+
+  if (!$checkUnpublishedNodeType || !$checkSchedulerExists && !isset($form['unpublish_on'])) {
+    unset($form['notify_unpublish_on']);
+    $hide_unpublish = TRUE;
+  }
+
+  if (!$checkOldNodeType) {
+    unset($form['notify_invalid_on']);
+    $hide_invalid = TRUE;
+  }
+  if($hide_invalid && $hide_unpublish) {
+    return;
+  }
+
+  // Create the group for the fields.
+  $form['content_notify_settings'] = [
+    '#type' => 'details',
+    '#title' => t('Content notify options'),
+    '#weight' => 35,
+    '#group' => 'advanced',
+    '#attributes' => ['class' => ['content-notify-form']],
+    '#optional' => FALSE,
+  ];
+
+  // Attach the fields to group.
+  if(!$hide_unpublish) {
+    $form['notify_unpublish_on']['#group'] = 'content_notify_settings';
+  }
+  if(!$hide_invalid) {
+    $form['notify_invalid_on']['#group'] = 'content_notify_settings';
+  }
+
+  if (!\Drupal::currentUser()->hasPermission('content notification of nodes')) {
+    // Do not show the content notification fields for users who do not have permission.
+    $form['content_notify_settings']['#access'] = FALSE;
+  }
+
+}
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node entities.
+ */
+function content_notify_node_presave(EntityInterface $node) {
+
+  $entity = $node->type->entity;
+
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  // unpublish notify.
+  $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
+  $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish',$node->getType());
+
+  if($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
+    if (empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
+      $days = $content_notify_manager->getConfig('set_unpublish_time');
+      if($days) {
+        $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
+      }
+    }
+
+    if(empty($node->notify_unpublish_on->value)) {
+      $notify_unpublish_time = $content_notify_manager->getConfig('notify_unpublish_time');
+      $notify_unpublish_on = (!empty($node->unpublish_on->value)) ? (date("U", strtotime("-" . $notify_unpublish_time . " days", $node->unpublish_on->value))) : 0;
+      $node->set('notify_unpublish_on', $notify_unpublish_on);
+    }
+  }
+
+  // old content notify.
+  $checkOldNodeType = $content_notify_manager->checkNodeType('invalid',$node->getType());
+
+  if($node->isPublished() && $checkOldNodeType) {
+    $notify_invalid_time =  $content_notify_manager->getConfig('notify_invalid_time');
+
+    if(empty($node->notify_invalid_on->value)) {
+      $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days", $node->created->value));
+      $node->set('notify_invalid_on', $notify_invalid_on);
+    }
+  }
+
+}
+
+/**
+ * Implements hook_cron().
+ */
+function content_notify_cron() {
+  // Use drupal_static so that any function can find out if we are running
+  // content_notify cron. Set the default value to FALSE, then turn on the flag.
+  // @see content_notify_cron_is_running()
+  $content_notify_cron = &drupal_static(__FUNCTION__, FALSE);
+  $content_notify_cron = TRUE;
+
+
+  $logger = \Drupal::service('logger.factory')->get('content_notify');
+  $state = \Drupal::service('state');
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  $unpublish_last_run = $state->get('content_notify_unpublish_last_run',0);
+  //$logger->notice('Old content_notify_unpublish_last_run:@date',['@date' => date('Y-m-d H:i:s',$unpublish_last_run)]);
+  $current_unpublish_time = $content_notify_manager->notifyUnpublished($unpublish_last_run);
+  $state->set('content_notify_unpublish_last_run',$current_unpublish_time);
+  //$logger->notice('New content_notify_unpublish_last_run:@date',['@date' => date('Y-m-d H:i:s',$current_unpublish_time)]);
+
+  $invalid_last_run = $state->get('content_notify_invalid_last_run',0);
+  //$logger->notice('Old content_notify_invalid_last_run:@date',['@date' => date('Y-m-d H:i:s',$invalid_last_run)]);
+  $current_invalid_time = $content_notify_manager->notifyInvalid($invalid_last_run);
+  $state->set('content_notify_invalid_last_run',$current_invalid_time);
+//  $logger->notice('New content_notify_invalid_last_run:@date',['@date' => date('Y-m-d H:i:s',$current_invalid_time)]);
+
+  // Reset the static scheduler_cron flag.
+  drupal_static_reset(__FUNCTION__);
+}
+
+/**
+ * Return whether content_notify cron is running.
+ *
+ * This function can be called from any content_notify function, from any contrib
+ * module or from custom PHP in a view or rule.
+ *
+ * @return bool
+ *   TRUE if content_notify_cron is currently running. FALSE if not.
+ */
+function content_notify_cron_is_running() {
+  return drupal_static('content_notify_cron');
+}
+
+/**
+ * Implements hook_mail().
+ */
+function content_notify_mail($key, &$message, $params) {
+
+  $message['from'] = \Drupal::config('system.site')->get('mail');
+  $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed; delsp=yes';
+
+  switch ($key) {
+
+    case 'unpublish':
+       $message['subject'] = $params['subject'];
+      $message['body'][] = $params['message'];
+      break;
+
+    case 'invalid':
+      $message['subject'] = $params['subject'];
+      $message['body'][] = $params['message'];
+      break;
+  }
+}
