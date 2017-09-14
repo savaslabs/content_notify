@@ -239,7 +239,7 @@ class ContentNotifyManager {
       ->loadMultiple($nids);
 
     foreach ($nodes as $node) {
-      $receiver = $this->getReceiver($node, $action);
+      $receiver = $this->getEmail($node, $action);
       $options = ['absolute' => TRUE];
       $node_url = Url::fromRoute('entity.node.canonical', ['node' => $node->id()], $options)
         ->toString();
@@ -288,18 +288,18 @@ class ContentNotifyManager {
   }
 
   /**
-   * Rule of finding email receiver of notification email
+   * Rule of finding email receiver of notification email.
    *
    * This provides a way for other modules to alter the receiver email
    * for invalid or unpublish notification,
    * by implementing hook_content_notify_email_receiver_alter()
    *
    * @param \Drupal\node\NodeInterface $node
-   *  Node object to get receiver.
+   *   Node object to get receiver.
    * @param string $action
-   *  The action that needs to be checked. Can be 'unpublish' or 'invalid'.
+   *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
-  function getReceiver(NodeInterface $node, $action) {
+  function getEmail(NodeInterface $node, $action) {
 
     $receiver = $this->getConfig('notify_' . $action . '_receiver');
     if (!empty($receiver)) {
@@ -319,7 +319,7 @@ class ContentNotifyManager {
    * Check whether scheduler module is exists in the system or not.
    *
    * @return bool
-   *  True if scheduler module exists otherwise False.
+   *   True if scheduler module exists otherwise False.
    */
   public function checkSchedulerExists() {
     return $this->moduleHandler->moduleExists('scheduler');
@@ -330,11 +330,12 @@ class ContentNotifyManager {
    *
    * @param string $action
    *   The action being performed, either "unpublish" or "invalid".
+   * @param string $node_type
+   *   Node type machine name.
    *
    * @return bool
-   *  True if node type checked otherwise False.
+   *   True if node type checked otherwise False.
    */
-
   public function checkNodeType($action, $node_type) {
     return in_array($node_type, $this->config->get('notify_' . $action . '_bundles'));
   }
@@ -346,7 +347,7 @@ class ContentNotifyManager {
    *   Config variable name.
    *
    * @return value
-   *  Value of the variable.
+   *   Value of the variable.
    */
   public function getConfig($config_name) {
     return $this->config->get($config_name);

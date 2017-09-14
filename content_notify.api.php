@@ -34,11 +34,11 @@ function hook_content_notify_nid_list_alter(array &$nids, $action) {
  * notification.
  *
  * @param array $params
- *  Contains mail elements which needs to used for notification.
+ *   Contains mail elements which needs to used for notification.
  *
  * @return bool
- *  TRUE if the drupal mail should be used, FALSE if mail already send
- *  and you want to prevent drupal mail system.
+ *   TRUE if the drupal mail should be used, FALSE if mail already send
+ *   and you want to prevent drupal mail system.
  */
 function hook_content_notify_send_unpublish(array $params) {
   return TRUE;
@@ -52,11 +52,11 @@ function hook_content_notify_send_unpublish(array $params) {
  * notification.
  *
  * @param array $params
- *  Contains mail elements which needs to used for notification.
+ *   Contains mail elements which needs to used for notification.
  *
  * @return bool
- *  TRUE if the drupal mail should be used, FALSE if mail is already send
- *  and you want to prevent drupal mail system.
+ *   TRUE if the drupal mail should be used, FALSE if mail is already send
+ *   and you want to prevent drupal mail system.
  */
 function hook_content_notify_send_invalid(array $params) {
   return TRUE;
@@ -72,7 +72,7 @@ function hook_content_notify_send_invalid(array $params) {
  * @param string $action
  *   The action being done to the node - 'invalid' or 'unpublish'.
  */
-function hook_content_notify_email_receiver_alter(&$email,NodeInterface $node, $action) {
+function hook_content_notify_email_receiver_alter(&$email, NodeInterface $node, $action) {
 }
 
 /**
