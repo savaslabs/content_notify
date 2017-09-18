@@ -307,7 +307,7 @@ class ContentNotifyManager {
    * @param string $action
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
-  function getEmail(NodeInterface $node, $action) {
+  public function getEmail(NodeInterface $node, $action) {
 
     $receiver = $this->getConfig('notify_' . $action . '_receiver');
     if (!empty($receiver)) {

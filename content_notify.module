@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * @file
+ * Content notify module functions.
+ */
+
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
