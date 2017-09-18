@@ -79,7 +79,7 @@ class ContentNotifyManager {
   /**
    * Constructs a ContentNotifyManager object.
    */
-  public function __construct(ModuleHandler $moduleHandler, EntityTypeManager $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger,StateInterface $state) {
+  public function __construct(ModuleHandler $moduleHandler, EntityTypeManager $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger, StateInterface $state) {
     $this->moduleHandler = $moduleHandler;
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $configFactory;
@@ -123,7 +123,7 @@ class ContentNotifyManager {
       $last_cron_run = $this->state->get('content_notify_invalid_last_run', 0);
       $current_time = $this->time->getRequestTime();
       $interval_time = strtotime("+$duration  day", $last_cron_run);
-      if($interval_time - $current_time <= 0) {
+      if ($interval_time - $current_time <= 0) {
         $nids = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
         // Allow other modules to alter the list of nodes to be published.
         $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);

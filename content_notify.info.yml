@@ -5,4 +5,4 @@ core: 8.x
 package: Others
 configure: content_notify.admin_form
 dependencies:
-  - scheduler
+  - 'drupal:scheduler'

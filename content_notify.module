@@ -146,7 +146,7 @@ function content_notify_node_presave(EntityInterface $node) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
       if ($days) {
         $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
-        $node->unpublish_on->value =  date("U", strtotime("+" . $days . " days"));
+        $node->unpublish_on->value = date("U", strtotime("+" . $days . " days"));
       }
     }
 

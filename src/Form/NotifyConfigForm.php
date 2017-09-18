@@ -150,7 +150,11 @@ class NotifyConfigForm extends ConfigFormBase {
     $form['invalid']['email_settings']['notify_invalid_digest_duration'] = [
       '#title' => $this->t('Interval of digest email'),
       '#type' => 'select',
-      '#options' => ['0' => $this->t('Immediately'),'7' => $this->t('Weekly'),'30' => $this->t('Monthly')],
+      '#options' => [
+        '0' => $this->t('Immediately'),
+        '7' => $this->t('Weekly'),
+        '30' => $this->t('Monthly')
+      ],
       '#default_value' => $config->get('notify_invalid_digest_duration'),
       '#description' => $this->t('What should be interval of sending digest email.'),
     ];
