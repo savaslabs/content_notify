@@ -5,6 +5,7 @@ use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Url;
 
 /**
  * Implements hook_help().
@@ -107,6 +108,25 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
     // for users who do not have permission.
     $form['content_notify_settings']['#access'] = FALSE;
   }
+
+  // Check which widget type is set for the scheduler fields, and give a warning
+  // if the wrong one has been set and provide a hint and link to fix it.
+  $storage_form_display = $form_state->getStorage()['form_display'];
+  $content = $storage_form_display->get('content');
+  $pluginDefinitions = $storage_form_display->get('pluginManager')->getDefinitions();
+  $correct_widget_id = 'datetime_timestamp_no_default';
+  foreach (['notify_unpublish_on' => 'notify_unpublish_on', 'notify_invalid_on' => 'notify_invalid_on'] as $field => $enabled) {
+    $actual_widget_id = $content[$field]['type'];
+    if ($enabled && $actual_widget_id != $correct_widget_id) {
+      drupal_set_message(t('The widget for field %field is incorrectly set to %wrong. This should be changed to %correct by an admin user via Field UI <a href="@link">content type form display</a> :not_available', [
+        '%field' => (string) $form[$field]['widget']['#title'],
+        '%correct' => (string) $pluginDefinitions[$correct_widget_id]['label'],
+        '%wrong' => (string) $pluginDefinitions[$actual_widget_id]['label'],
+        '@link' => \Drupal::moduleHandler()->moduleExists('field_ui') ? Url::fromRoute('entity.entity_form_display.node.default', ['node_type' => $type->get('type')])->toString() : '#',
+        ':not_available' => \Drupal::moduleHandler()->moduleExists('field_ui') ? '' : ('(' . t('not available') . ')'),
+      ]), 'warning', FALSE);
+    }
+  }
 }
 
 /**
@@ -126,6 +146,7 @@ function content_notify_node_presave(EntityInterface $node) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
       if ($days) {
         $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
+        $node->unpublish_on->value =  date("U", strtotime("+" . $days . " days"));
       }
     }
 
@@ -138,10 +159,8 @@ function content_notify_node_presave(EntityInterface $node) {
 
   // Old content notify.
   $checkOldNodeType = $content_notify_manager->checkNodeType('invalid', $node->getType());
-
   if ($node->isPublished() && $checkOldNodeType) {
     $notify_invalid_time = $content_notify_manager->getConfig('notify_invalid_time');
-
     if (empty($node->notify_invalid_on->value)) {
       $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days", $node->created->value));
       $node->set('notify_invalid_on', $notify_invalid_on);
@@ -160,17 +179,11 @@ function content_notify_cron() {
   $content_notify_cron = &drupal_static(__FUNCTION__, FALSE);
   $content_notify_cron = TRUE;
 
-  $state = \Drupal::service('state');
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
-  $unpublish_last_run = $state->get('content_notify_unpublish_last_run', 0);
-  $current_unpublish_time = $content_notify_manager->notifyUnpublished($unpublish_last_run);
-  $state->set('content_notify_unpublish_last_run', $current_unpublish_time);
-
-  $invalid_last_run = $state->get('content_notify_invalid_last_run', 0);
-  $current_invalid_time = $content_notify_manager->notifyInvalid($invalid_last_run);
-  $state->set('content_notify_invalid_last_run', $current_invalid_time);
+  $content_notify_manager->notifyUnpublished();
+  $content_notify_manager->notifyInvalid();
 
   // Reset the static scheduler_cron flag.
   drupal_static_reset(__FUNCTION__);

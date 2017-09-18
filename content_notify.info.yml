@@ -4,3 +4,5 @@ description: Notifications of content based on invalid and unpublishing.
 core: 8.x
 package: Others
 configure: content_notify.admin_form
+dependencies:
+  - scheduler

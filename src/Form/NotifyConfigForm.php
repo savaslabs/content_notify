@@ -76,6 +76,7 @@ class NotifyConfigForm extends ConfigFormBase {
       $form['notify']['set_unpublish_time'] = [
         '#title' => $this->t('Days from creation date to auto expire node'),
         '#type' => 'number',
+        '#field_suffix' => $this->t('Days'),
         '#default_value' => $config->get('set_unpublish_time'),
         '#description' => $this->t('if the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
       ];
@@ -84,6 +85,7 @@ class NotifyConfigForm extends ConfigFormBase {
         '#title' => $this->t('Days before unpublishing to send notification'),
         '#type' => 'number',
         '#default_value' => $config->get('notify_unpublish_time'),
+        '#field_suffix' => $this->t('Days'),
         '#description' => $this->t('How many days before unpublishing a notification e-mail be sent to the user?'),
       ];
 
@@ -135,14 +137,23 @@ class NotifyConfigForm extends ConfigFormBase {
     $form['invalid']['notify_invalid_time'] = [
       '#title' => $this->t('Days from publish date to set send mail about content validity.'),
       '#type' => 'number',
+      '#field_suffix' => $this->t('Days'),
       '#default_value' => $config->get('notify_invalid_time'),
       '#description' => $this->t('How many days after publishing should a mail go out?.'),
     ];
+
     $form['invalid']['email_settings'] = [
       '#type' => 'details',
       '#description' => $this->t('Mail will always go as digest email with all nodes per specific user'),
       '#title' => $this->t('Mail settings'),
       '#collapsed' => FALSE,
+    ];
+    $form['invalid']['email_settings']['notify_invalid_digest_duration'] = [
+      '#title' => $this->t('Interval of digest email'),
+      '#type' => 'select',
+      '#options' => ['0' => $this->t('Immediately'),'7' => $this->t('Weekly'),'30' => $this->t('Monthly')],
+      '#default_value' => $config->get('notify_invalid_digest_duration'),
+      '#description' => $this->t('What should be interval of sending digest email.'),
     ];
 
     $form['invalid']['email_settings']['notify_invalid_receiver'] = [
@@ -185,6 +196,7 @@ class NotifyConfigForm extends ConfigFormBase {
 
     $this->config('content_notify.settings')
       ->set('notify_invalid_bundles', $notify_invalid_bundles)
+      ->set('notify_invalid_digest_duration', $values['notify_invalid_digest_duration'])
       ->set('notify_invalid_receiver', $values['notify_invalid_receiver'])
       ->set('notify_invalid_time', $values['notify_invalid_time'])
       ->set('notify_invalid_subject', $values['notify_invalid_subject'])

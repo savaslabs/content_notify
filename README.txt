@@ -25,7 +25,7 @@ Content editor can notified of content which will be unpublished
 in certain time later. You can configure in admin panel how many days before
 you want to notify before content is going to unpublished. This part of
 module depends on Scheduler module so to achieve full features of module
-it is recommended to enable scheduler module.
+it is required to have scheduler module.
 
 2. Notification of invalid/Old content
 
@@ -44,7 +44,7 @@ REQUIREMENTS
  * There are no special requirements outside core.
 
 
-RECOMMENDED MODULES
+REQUIRED MODULES
 -------------------
 
  * scheduler (https://www.drupal.org/project/scheduler):

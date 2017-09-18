@@ -11,6 +11,7 @@ use Drupal\Core\Mail\MailManagerInterface;
 use Drupal\Core\Language\LanguageManagerInterface;
 use Psr\Log\LoggerInterface;
 use Drupal\Component\Datetime\TimeInterface;
+use Drupal\Core\State\StateInterface;
 
 /**
  * Defines a Content Notify manager.
@@ -69,9 +70,16 @@ class ContentNotifyManager {
   protected $logger;
 
   /**
+   * Drupal\Core\State\State definition.
+   *
+   * @var \Drupal\Core\State\State
+   */
+  protected $state;
+
+  /**
    * Constructs a ContentNotifyManager object.
    */
-  public function __construct(ModuleHandler $moduleHandler, EntityTypeManager $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger) {
+  public function __construct(ModuleHandler $moduleHandler, EntityTypeManager $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger,StateInterface $state) {
     $this->moduleHandler = $moduleHandler;
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $configFactory;
@@ -80,49 +88,49 @@ class ContentNotifyManager {
     $this->languageManager = $language_manager;
     $this->mailManager = $mail_manager;
     $this->logger = $logger;
+    $this->state = $state;
 
   }
 
   /**
    * Notify unpublishing of nodes.
-   *
-   * @return int
-   *   current time for the execution to save in stage variable.
    */
-  public function notifyUnpublished($last_cron_run) {
+  public function notifyUnpublished() {
 
     $bundles = $this->getConfig('notify_unpublish_bundles');
     $action = 'unpublish';
     if (!empty($bundles)) {
+      $last_run = $this->state->get('content_notify_unpublish_last_run', 0);
       $current_time = $this->time->getRequestTime();
-      $nids = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+      $nids = $this->getQuery($bundles, $action, $last_run, $current_time);
       // Allow other modules to alter the list of nodes to be published.
       $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);
       $email_list = $this->processResult($nids, $action);
       $this->processEmail($email_list, $action);
-      return $current_time;
+      $this->state->set('content_notify_unpublish_last_run', $current_time);
     }
   }
 
   /**
    * Notify old nodes of system.
-   *
-   * @return int
-   *   current time for the execution to save in stage variable.
    */
-  public function notifyInvalid($last_cron_run) {
+  public function notifyInvalid() {
 
     $bundles = $this->getConfig('notify_invalid_bundles');
     $action = 'invalid';
     if (!empty($bundles)) {
+      $duration = $this->getConfig('notify_invalid_digest_duration');
+      $last_cron_run = $this->state->get('content_notify_invalid_last_run', 0);
       $current_time = $this->time->getRequestTime();
-      $nids = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
-      // Allow other modules to alter the list of nodes to be published.
-      $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);
-      $email_list = $this->processResult($nids, $action);
-      $this->processEmail($email_list, $action);
-      return $current_time;
-
+      $interval_time = strtotime("+$duration  day", $last_cron_run);
+      if($interval_time - $current_time <= 0) {
+        $nids = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+        // Allow other modules to alter the list of nodes to be published.
+        $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);
+        $email_list = $this->processResult($nids, $action);
+        $this->processEmail($email_list, $action);
+        $this->state->set('content_notify_invalid_last_run', $current_time);
+      }
     }
   }
 
