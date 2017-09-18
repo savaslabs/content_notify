@@ -55,7 +55,6 @@ class NotifyConfigForm extends ConfigFormBase {
   public function buildForm(array $form, FormStateInterface $form_state) {
 
     $config = $this->config('content_notify.settings');
-
     if ($this->contentNotifyManager->checkSchedulerExists()) {
 
       $form['notify'] = [

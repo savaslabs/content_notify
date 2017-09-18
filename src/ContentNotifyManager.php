@@ -155,15 +155,15 @@ class ContentNotifyManager {
       if ($this->isSend($params, $action)) {
         $result = $this->mailManager->mail('content_notify', $action, $receiver, $langcode, $params, NULL, TRUE);
         if ($result['result'] !== TRUE) {
-          $this->logger->error('There was a problem sending notification:@action to email:@reciever', [
+          $this->logger->error('There was a problem sending notification:@action to email:@receiver', [
             '@ction' => $action,
-            '@reciever' => $receiver,
+            '@receiver' => $receiver,
           ]);
         }
         else {
           $this->logger->notice('Notification:@action has been send to email:@receiver and @body', [
             '@action' => $action,
-            '@reciever' => $receiver,
+            '@receiver' => $receiver,
             '@body' => $params['message'],
           ]);
         }
@@ -319,7 +319,6 @@ class ContentNotifyManager {
 
     // Allow other modules to alter the email receiver.
     $this->moduleHandler->alter('content_notify_email_receiver', $email, $node, $action);
-
     return $email;
   }
 
