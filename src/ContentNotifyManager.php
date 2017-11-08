@@ -3,7 +3,7 @@
 namespace Drupal\content_notify;
 
 use Drupal\Core\Config\ConfigFactory;
-use Drupal\Core\Entity\EntityTypeManager;
+use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Extension\ModuleHandler;
 use Drupal\Core\Url;
 use Drupal\node\NodeInterface;
@@ -79,7 +79,7 @@ class ContentNotifyManager {
   /**
    * Constructs a ContentNotifyManager object.
    */
-  public function __construct(ModuleHandler $moduleHandler, EntityTypeManager $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger, StateInterface $state) {
+  public function __construct(ModuleHandler $moduleHandler, EntityTypeManagerInterface $entity_type_manager, ConfigFactory $configFactory, TimeInterface $time = NULL, MailManagerInterface $mail_manager, LanguageManagerInterface $language_manager, LoggerInterface $logger, StateInterface $state) {
     $this->moduleHandler = $moduleHandler;
     $this->entityTypeManager = $entity_type_manager;
     $this->configFactory = $configFactory;
