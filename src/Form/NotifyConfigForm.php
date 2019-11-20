@@ -202,7 +202,7 @@ class NotifyConfigForm extends ConfigFormBase {
       '#type' => 'number',
       '#field_suffix' => $this->t('Days'),
       '#default_value' => $config->get('notify_invalid_time_2_offset'),
-      '#description' => $this->t('For example, if initial notification is 150 days, and want another notification at 165 days, 15 days later, enter: 15'),
+      '#description' => $this->t('Leave blank for no second notifcation. To set a second notification, for example, if initial notification is 150 days, and want another notification at 165 days, 15 days later, enter: 15'),
     ];
 
     $form['invalid']['email_settings'] = [

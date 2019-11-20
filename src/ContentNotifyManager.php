@@ -126,14 +126,16 @@ class ContentNotifyManager {
       $interval_time = strtotime("+$duration  day", $last_cron_run);
       if ($interval_time - $current_time <= 0) {
         // Get results in the first notification window.
-        $results1 = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
-        // Get results that would be in the second notification window.
-        $results2 = $this->getQuery($bundles, $action, $last_cron_run, $current_time, $offset);
-        // It is unlikely, but depending on the settings, or changes to the
-        // settings, a piece of content might meet the criteria for both.
-        // Avoid a user getting a duplicate notification.
-        // Combine results, filtering out duplicates.
-        $results = array_unique(array_merge($results1, $results2), SORT_REGULAR);
+        $results = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+        if ($offset) {
+          // Get results that would be in the second notification window.
+          $results2 = $this->getQuery($bundles, $action, $last_cron_run, $current_time, $offset);
+          // It is unlikely, but depending on the settings, or changes to the
+          // settings, a piece of content might meet the criteria for both.
+          // Avoid a user getting a duplicate notification.
+          // Combine results, filtering out duplicates.
+          $results = array_unique(array_merge($results, $results2), SORT_REGULAR);
+        }
 
         // Allow other modules to alter the list of nodes to be published.
         $this->moduleHandler->alter('content_notify_nid_list', $results, $action);
