@@ -197,6 +197,14 @@ class NotifyConfigForm extends ConfigFormBase {
       '#description' => $this->t('How many days after publishing should a mail go out?.'),
     ];
 
+    $form['invalid']['notify_invalid_time_2_offset'] = [
+      '#title' => $this->t('Second notification, days after first notification'),
+      '#type' => 'number',
+      '#field_suffix' => $this->t('Days'),
+      '#default_value' => $config->get('notify_invalid_time_2_offset'),
+      '#description' => $this->t('For example, if initial notification is 150 days, and want another notification at 165 days, 15 days later, enter: 15'),
+    ];
+
     $form['invalid']['email_settings'] = [
       '#type' => 'details',
       '#description' => $this->t('Mail will always go as digest email with all nodes per specific user'),
@@ -271,6 +279,7 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_invalid_digest_duration', $values['notify_invalid_digest_duration'])
       ->set('notify_invalid_receiver', $values['notify_invalid_receiver'])
       ->set('notify_invalid_time', $values['notify_invalid_time'])
+      ->set('notify_invalid_time_2_offset', $values['notify_invalid_time_2_offset'])
       ->set('notify_invalid_subject', $values['notify_invalid_subject'])
       ->set('notify_invalid_body', $values['notify_invalid_body'])
       ->save();

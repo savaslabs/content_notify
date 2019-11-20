@@ -115,16 +115,26 @@ class ContentNotifyManager {
    * Notify old nodes of system.
    */
   public function notifyInvalid() {
-
+    $offset = $this->getConfig('notify_invalid_time_2_offset');
     $bundles = $this->getConfig('notify_invalid_bundles');
     $action = 'invalid';
+
     if (!empty($bundles)) {
       $duration = $this->getConfig('notify_invalid_digest_duration');
       $last_cron_run = $this->state->get('content_notify_invalid_last_run', 0);
       $current_time = $this->time->getRequestTime();
       $interval_time = strtotime("+$duration  day", $last_cron_run);
       if ($interval_time - $current_time <= 0) {
-        $results = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+        // Get results in the first notification window.
+        $results1 = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+        // Get results that would be in the second notification window.
+        $results2 = $this->getQuery($bundles, $action, $last_cron_run, $current_time, $offset);
+        // It is unlikely, but depending on the settings, or changes to the
+        // settings, a piece of content might meet the criteria for both.
+        // Avoid a user getting a duplicate notification.
+        // Combine results, filtering out duplicates.
+        $results = array_unique(array_merge($results1, $results2), SORT_REGULAR);
+
         // Allow other modules to alter the list of nodes to be published.
         $this->moduleHandler->alter('content_notify_nid_list', $results, $action);
         $email_list = $this->processResult($results, $action);
@@ -309,12 +319,14 @@ class ContentNotifyManager {
    *   When last execute the query from state variable.
    * @param int $current_time
    *   Current time of the system.
+   * @param int $offset
+   *   (optional) Number of days for another notification window.
    *
    * @return array
    *   Array of objects. Each object is information about the result with
    *   properties: nid, vid, langcode, ...
    */
-  public function getQuery(array $bundles, $action, $last_cron_run, $current_time) {
+  public function getQuery(array $bundles, $action, $last_cron_run, $current_time, $offset = 0) {
 
     /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
     $content_notify_manager = \Drupal::service('content_notify.manager');
@@ -328,10 +340,13 @@ class ContentNotifyManager {
       $current_time = strtotime($debug_current_time_override);
     }
 
+    // 60 sec * 60 minutes * 24 hours to get seconds in a day.
+    $offset_unix_time = $offset * 86400;
+
     $database = \Drupal::database();
     $query = $database->select('node_field_data', 'n')
-      ->condition('n.' . 'notify_' . $action . '_on', $current_time, '<=')
-      ->condition('n.' . 'notify_' . $action . '_on', $last_cron_run, '>')
+      ->condition('n.' . 'notify_' . $action . '_on', $current_time - $offset_unix_time, '<=')
+      ->condition('n.' . 'notify_' . $action . '_on', $last_cron_run - $offset_unix_time, '>')
       ->condition('n.' . 'type', $bundles, 'IN')
       ->condition('n.' . 'status', 1)
       ->fields('n', ['nid', 'vid', 'langcode', 'notify_unpublish_on']);
