@@ -279,6 +279,18 @@ class ContentNotifyManager {
    */
   public function getQuery(array $bundles, $action, $last_cron_run, $current_time) {
 
+    /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+    $content_notify_manager = \Drupal::service('content_notify.manager');
+
+    $debug = $content_notify_manager->getConfig('debug');
+
+    if ($debug) {
+      $debug_last_cron_override = $content_notify_manager->getConfig('debug_last_cron_override');
+      $last_cron_run = strtotime($debug_last_cron_override);
+      $debug_current_time_override = $content_notify_manager->getConfig('debug_current_time_override');
+      $current_time = strtotime($debug_current_time_override);
+    }
+
     $query = $this->entityTypeManager->getStorage('node')
       ->getQuery()
       ->condition('notify_' . $action . '_on', $current_time, '<=')

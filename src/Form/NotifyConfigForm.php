@@ -57,6 +57,27 @@ class NotifyConfigForm extends ConfigFormBase {
     $config = $this->config('content_notify.settings');
     if ($this->contentNotifyManager->checkSchedulerExists()) {
 
+      $form['debug'] = [
+        '#title' => $this->t('Enable debugging'),
+        '#description' => $this->t('Enable debug to override the default behavior. Do not deploy to production with this setting.'),
+        '#type' => 'checkbox',
+        '#default_value' => $config->get('debug'),
+      ];
+
+      $form['debug_last_cron_override'] = [
+        '#title' => $this->t('Last cron run override'),
+        '#description' => $this->t('Set when you want to pretend the last cron run was, for example -1days.'),
+        '#type' => 'textfield',
+        '#default_value' => $config->get('debug_last_cron_override'),
+      ];
+
+      $form['debug_current_time_override'] = [
+        '#title' => $this->t('Current time override'),
+        '#description' => $this->t('Set when you want to pretend to be another point in time, for example +155days.'),
+        '#type' => 'textfield',
+        '#default_value' => $config->get('debug_current_time_override'),
+      ];
+
       $form['notify'] = [
         '#title' => $this->t('Notifications about content about to be unpublished'),
         '#description' => $this->t('You need to set which bundles notices should be sent on. The bundles you choose need to have scheduler settings enabled.'),
@@ -196,6 +217,12 @@ class NotifyConfigForm extends ConfigFormBase {
     sort($notify_invalid_bundles);
 
     $values = $form_state->getValues();
+
+    $this->config('content_notify.settings')
+      ->set('debug', $values['debug'])
+      ->set('debug_last_cron_override', $values['debug_last_cron_override'])
+      ->set('debug_current_time_override', $values['debug_current_time_override'])
+      ->save();
 
     $this->config('content_notify.settings')
       ->set('notify_invalid_bundles', $notify_invalid_bundles)
