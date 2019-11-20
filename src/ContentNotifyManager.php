@@ -213,8 +213,9 @@ class ContentNotifyManager {
    */
   protected function bodyTokenReplace($body, array $nodes) {
     $newline = '
+    <br>
     ';
-    $digest_nodes = implode($nodes, $newline);
+    $digest_nodes = $newline . implode($nodes, $newline);
     $body = str_replace('[content-notify:digest-nodes]', $digest_nodes, $body);
     return $body;
 
