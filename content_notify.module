@@ -142,12 +142,15 @@ function content_notify_node_presave(EntityInterface $node) {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
+  $always_push_out_time = $content_notify_manager->getConfig('always_push_out_time');
+
   // Unpublish notify.
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
   $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish', $node->getType());
 
   if ($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
-    if (empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
+    if ($always_push_out_time
+      || empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
       if ($days) {
         $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
@@ -155,7 +158,9 @@ function content_notify_node_presave(EntityInterface $node) {
       }
     }
 
-    if (empty($node->notify_unpublish_on->value)) {
+    if ($always_push_out_time
+      || empty($node->notify_unpublish_on->value)
+    ) {
       $notify_unpublish_time = $content_notify_manager->getConfig('notify_unpublish_time');
       $notify_unpublish_on = (!empty($node->unpublish_on->value)) ? (date("U", strtotime("-" . $notify_unpublish_time . " days", $node->unpublish_on->value))) : 0;
       $node->set('notify_unpublish_on', $notify_unpublish_on);
@@ -166,8 +171,10 @@ function content_notify_node_presave(EntityInterface $node) {
   $checkOldNodeType = $content_notify_manager->checkNodeType('invalid', $node->getType());
   if ($node->isPublished() && $checkOldNodeType) {
     $notify_invalid_time = $content_notify_manager->getConfig('notify_invalid_time');
-    if (empty($node->notify_invalid_on->value)) {
-      $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days", $node->created->value));
+    if ($always_push_out_time
+      || empty($node->notify_invalid_on->value)
+    ) {
+      $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days"));
       $node->set('notify_invalid_on', $notify_invalid_on);
     }
   }

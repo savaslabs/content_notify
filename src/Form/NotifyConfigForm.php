@@ -201,6 +201,13 @@ class NotifyConfigForm extends ConfigFormBase {
       '#description' => $this->t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available'),
     ];
 
+    $form['always_push_out_time'] = [
+      '#title' => $this->t('Always extend out time on publish'),
+      '#description' => $this->t('Enable to always update notify on and unpublish on dates.'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('always_push_out_time'),
+    ];
+
     $form['array_filter'] = ['#type' => 'value', '#value' => TRUE];
 
     return parent::buildForm($form, $form_state);
@@ -243,6 +250,10 @@ class NotifyConfigForm extends ConfigFormBase {
         ->set('set_unpublish_time', $values['set_unpublish_time'])
         ->save();
     }
+
+    $this->config('content_notify.settings')
+      ->set('always_push_out_time', $values['always_push_out_time'])
+      ->save();
 
     parent::submitForm($form, $form_state);
   }
