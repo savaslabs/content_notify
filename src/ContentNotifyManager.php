@@ -243,6 +243,19 @@ class ContentNotifyManager {
    * @see hook_content_notify_digest_nodes_alter($link,$action)
    */
   public function processResult(array $results, $action) {
+    $include_date = $this->getConfig('include_unpublish_date_in_warning');
+
+    $date_format = $this->getConfig('date_format');
+    if (empty($date_format)) {
+      $date_format = 'F j Y H:i T';
+    }
+
+    $warning_text = $this->getConfig('unpublish_date_warning_text');
+    if (empty($warning_text)) {
+      $warning_text = 'scheduled to be auto-archived';
+    }
+
+    $bundles_to_unpublish = $this->getConfig('notify_unpublish_bundles');
 
     $email_list = [];
 
@@ -261,7 +274,21 @@ class ContentNotifyManager {
       $node_url = Url::fromRoute('entity.node.canonical', ['node' => $node->id()], $options)
         ->toString();
 
-      $link = $translation->getTitle() . ' - ' . $node_url;
+      $link = ' * ' . $translation->getTitle() . '<br> - ' . $node_url;
+
+      if ($include_date
+        && in_array($node->bundle(), $bundles_to_unpublish)
+        && !empty($result->notify_unpublish_on)
+      ) {
+        $eastern_time_zone = new \DateTimeZone('America/New_York');
+        $date_time = new \Datetime();
+        $date_time->setTimestamp($result->notify_unpublish_on);
+        $date_time->setTimezone($eastern_time_zone);
+        $unpublish_date_string = $date_time->format($date_format);
+        $link .= "<br> - ($warning_text $unpublish_date_string)";
+      }
+
+      $link .= '<p>';
 
       // Allow other modules to alter link
       // which will be replace digest-title token.

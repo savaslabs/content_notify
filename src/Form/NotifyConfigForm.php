@@ -145,6 +145,34 @@ class NotifyConfigForm extends ConfigFormBase {
       '#default_value' => $config->get('ignore_translations'),
     ];
 
+    $form['unpublish_date_warning'] = [
+      '#title' => $this->t('Unpublish date warning'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    ];
+
+    $form['unpublish_date_warning']['include_unpublish_date_in_warning'] = [
+      '#title' => $this->t('Include unpublish date in warning regarding old content'),
+      '#description' => $this->t('Enable to include date and time.'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('include_unpublish_date_in_warning'),
+    ];
+
+    $form['unpublish_date_warning']['unpublish_date_warning_text'] = [
+      '#title' => $this->t('Warning text'),
+      '#description' => $this->t('Will prefix date and time. For example: scheduled to be auto-archived'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('unpublish_date_warning_text'),
+    ];
+
+    $form['unpublish_date_warning']['date_format'] = [
+      '#title' => $this->t('Date format'),
+      '#description' => $this->t('For example: F j Y H:i T'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('date_format'),
+    ];
+
     $form['invalid'] = [
       '#title' => $this->t('Notify user of old content'),
       '#description' => $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
@@ -249,6 +277,9 @@ class NotifyConfigForm extends ConfigFormBase {
 
     $this->config('content_notify.settings')
       ->set('ignore_translations', $values['ignore_translations'])
+      ->set('include_unpublish_date_in_warning', $values['include_unpublish_date_in_warning'])
+      ->set('date_format', $values['date_format'])
+      ->set('unpublish_date_warning_text', $values['unpublish_date_warning_text'])
       ->save();
 
     if ($this->contentNotifyManager->checkSchedulerExists()) {
