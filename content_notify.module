@@ -142,6 +142,15 @@ function content_notify_node_presave(EntityInterface $node) {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
+  $ignore_translations = $content_notify_manager->getConfig('ignore_translations');
+
+  // If a translation of the node, return and do not save values.
+  if ($ignore_translations
+    && !$node->isDefaultTranslation()
+  ) {
+    return;
+  }
+
   $always_push_out_time = $content_notify_manager->getConfig('always_push_out_time');
 
   // Unpublish notify.

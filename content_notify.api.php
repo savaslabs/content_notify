@@ -16,12 +16,13 @@
  * This hook allows modules to add or remove node ids from the list being
  * processed in the current cron run. It is invoked during cron runs only.
  *
- * @param array $nids
- *   An array of node ids being processed.
+ * @param array $results
+ *   Array of objects. Each object is information about the result with
+ *   properties: nid, vid, langcode, ...
  * @param string $action
  *   The action being done to the node - 'invalid' or 'unpublish'.
  */
-function hook_content_notify_nid_list_alter(array &$nids, $action) {
+function hook_content_notify_nid_list_alter(array &$results, $action) {
   // Do some processing to add or remove node ids.
 }
 

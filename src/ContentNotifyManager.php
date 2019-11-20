@@ -102,10 +102,10 @@ class ContentNotifyManager {
     if (!empty($bundles)) {
       $last_run = $this->state->get('content_notify_unpublish_last_run', 0);
       $current_time = $this->time->getRequestTime();
-      $nids = $this->getQuery($bundles, $action, $last_run, $current_time);
+      $results = $this->getQuery($bundles, $action, $last_run, $current_time);
       // Allow other modules to alter the list of nodes to be published.
-      $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);
-      $email_list = $this->processResult($nids, $action);
+      $this->moduleHandler->alter('content_notify_nid_list', $results, $action);
+      $email_list = $this->processResult($results, $action);
       $this->processEmail($email_list, $action);
       $this->state->set('content_notify_unpublish_last_run', $current_time);
     }
@@ -124,10 +124,10 @@ class ContentNotifyManager {
       $current_time = $this->time->getRequestTime();
       $interval_time = strtotime("+$duration  day", $last_cron_run);
       if ($interval_time - $current_time <= 0) {
-        $nids = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
+        $results = $this->getQuery($bundles, $action, $last_cron_run, $current_time);
         // Allow other modules to alter the list of nodes to be published.
-        $this->moduleHandler->alter('content_notify_nid_list', $nids, $action);
-        $email_list = $this->processResult($nids, $action);
+        $this->moduleHandler->alter('content_notify_nid_list', $results, $action);
+        $email_list = $this->processResult($results, $action);
         $this->processEmail($email_list, $action);
         $this->state->set('content_notify_invalid_last_run', $current_time);
       }
@@ -230,8 +230,9 @@ class ContentNotifyManager {
    * and reminder of unpublish,
    * by implementing hook_content_notify_digest_nodes_alter()
    *
-   * @param array $nids
-   *   Node ids.
+   * @param array $results
+   *   Array of objects. Each object is information about the result with
+   *   properties: nid, vid, langcode, ...
    * @param string $action
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    *
@@ -241,24 +242,31 @@ class ContentNotifyManager {
    *
    * @see hook_content_notify_digest_nodes_alter($link,$action)
    */
-  public function processResult(array $nids, $action) {
+  public function processResult(array $results, $action) {
 
     $email_list = [];
-    $nodes = $this->entityTypeManager->getStorage('node')
-      ->loadMultiple($nids);
 
-    foreach ($nodes as $node) {
-      $receiver = $this->getEmail($node, $action);
+    foreach ($results as $key => $result) {
+      $node = $this->entityTypeManager->getStorage('node')
+        ->loadRevision($result->vid);
+
+      $translation = $node->getTranslation($result->langcode);
+      $receiver = $this->getEmail($translation, $action);
+
+      $language_manager = \Drupal::languageManager();
+      $language = $language_manager->getLanguage($result->langcode);
+
       $options = ['absolute' => TRUE];
+      $options += ['language' => $language];
       $node_url = Url::fromRoute('entity.node.canonical', ['node' => $node->id()], $options)
         ->toString();
 
-      $link = $node->getTitle() . ' - ' . $node_url;
+      $link = $translation->getTitle() . ' - ' . $node_url;
 
       // Allow other modules to alter link
       // which will be replace digest-title token.
       $this->moduleHandler->alter('content_notify_digest_nodes', $link, $node);
-      $email_list[$receiver]['nodes'][$node->id()] = $link;
+      $email_list[$receiver]['nodes'][$key] = $link;
     }
     return $email_list;
   }
@@ -276,7 +284,8 @@ class ContentNotifyManager {
    *   Current time of the system.
    *
    * @return array
-   *   $nids  nodes ids to handle.
+   *   Array of objects. Each object is information about the result with
+   *   properties: nid, vid, langcode, ...
    */
   public function getQuery(array $bundles, $action, $last_cron_run, $current_time) {
 
@@ -292,20 +301,26 @@ class ContentNotifyManager {
       $current_time = strtotime($debug_current_time_override);
     }
 
-    $query = $this->entityTypeManager->getStorage('node')
-      ->getQuery()
-      ->condition('notify_' . $action . '_on', $current_time, '<=')
-      ->condition('notify_' . $action . '_on', $last_cron_run, '>')
-      ->condition('type', $bundles, 'IN')
-      ->condition('status', 1)
-      ->sort('notify_' . $action . '_on')
-      ->sort('nid');
-    // Disable access checks for this query.
-    $query->accessCheck(FALSE);
-    $nids = $query->execute();
+    $database = \Drupal::database();
+    $query = $database->select('node_field_data', 'n')
+      ->condition('n.' . 'notify_' . $action . '_on', $current_time, '<=')
+      ->condition('n.' . 'notify_' . $action . '_on', $last_cron_run, '>')
+      ->condition('n.' . 'type', $bundles, 'IN')
+      ->condition('n.' . 'status', 1)
+      ->fields('n', ['nid', 'vid', 'langcode', 'notify_unpublish_on']);
 
-    return $nids;
+    /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+    $content_notify_manager = \Drupal::service('content_notify.manager');
 
+    $ignore_translations = $content_notify_manager->getConfig('ignore_translations');
+
+    if ($ignore_translations) {
+      $query->condition('n.' . 'default_langcode', 1);
+    }
+
+    $results = $query->execute()->fetchAll();
+
+    return $results;
   }
 
   /**

@@ -138,6 +138,13 @@ class NotifyConfigForm extends ConfigFormBase {
       ];
     }
 
+    $form['ignore_translations'] = [
+      '#title' => $this->t('Ignore translations'),
+      '#description' => $this->t('Enable to ignore translations. (Recommended.)'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('ignore_translations'),
+    ];
+
     $form['invalid'] = [
       '#title' => $this->t('Notify user of old content'),
       '#description' => $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
@@ -238,6 +245,10 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_invalid_time', $values['notify_invalid_time'])
       ->set('notify_invalid_subject', $values['notify_invalid_subject'])
       ->set('notify_invalid_body', $values['notify_invalid_body'])
+      ->save();
+
+    $this->config('content_notify.settings')
+      ->set('ignore_translations', $values['ignore_translations'])
       ->save();
 
     if ($this->contentNotifyManager->checkSchedulerExists()) {
