@@ -245,11 +245,36 @@ class NotifyConfigForm extends ConfigFormBase {
     ];
 
     $form['always_push_out_time'] = [
-      '#title' => $this->t('Always extend out time on publish'),
-      '#description' => $this->t('Enable to always update notify on and unpublish on dates.'),
+      '#title' => $this->t('Always extend out time'),
+      '#description' => $this->t('When updating dates, update even if dates are already set.'),
       '#type' => 'checkbox',
       '#default_value' => $config->get('always_push_out_time'),
     ];
+
+    $module_workflows_enabled = \Drupal::moduleHandler()
+      ->moduleExists('workflows');
+    if ($module_workflows_enabled) {
+      $form['workflow'] = [
+        '#title' => $this->t('Workflow settings'),
+        '#type' => 'details',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
+      ];
+
+      $form['workflow']['notify_workflow_use_transition_criteria'] = [
+        '#title' => $this->t('Use transition criteria'),
+        '#description' => $this->t('Without this, criteria is just the node being saved is: Published. With this, the criteria is a transiton from any different state to the state specified below state.'),
+        '#type' => 'checkbox',
+        '#default_value' => $config->get('notify_workflow_use_transition_criteria'),
+      ];
+
+      $form['workflow']['notify_workflow_to_state'] = [
+        '#title' => $this->t('To state'),
+        '#type' => 'textfield',
+        '#default_value' => $config->get('notify_workflow_to_state'),
+        '#description' => $this->t('Machine name, for example: published'),
+      ];
+    }
 
     $form['array_filter'] = ['#type' => 'value', '#value' => TRUE];
 
@@ -304,6 +329,8 @@ class NotifyConfigForm extends ConfigFormBase {
 
     $this->config('content_notify.settings')
       ->set('always_push_out_time', $values['always_push_out_time'])
+      ->set('notify_workflow_use_transition_criteria', $values['notify_workflow_use_transition_criteria'])
+      ->set('notify_workflow_to_state', $values['notify_workflow_to_state'])
       ->save();
 
     parent::submitForm($form, $form_state);

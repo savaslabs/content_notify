@@ -157,7 +157,44 @@ function content_notify_node_presave(EntityInterface $node) {
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
   $checkUnpublishedNodeType = $content_notify_manager->checkNodeType('unpublish', $node->getType());
 
-  if ($node->isPublished() && $checkSchedulerExists && $checkUnpublishedNodeType) {
+  $criteria = FALSE;
+  $module_workflows_enabled = \Drupal::moduleHandler()
+    ->moduleExists('workflows');
+  if ($module_workflows_enabled) {
+    $use_transition = $content_notify_manager->getConfig('notify_workflow_use_transition_criteria');
+    if ($use_transition) {
+      $to_state = $content_notify_manager->getConfig('notify_workflow_to_state');
+      $current_workflow_state = $node->get('moderation_state')->getString();
+
+      // Get all of the revision ids.
+      $revision_ids = \Drupal::entityTypeManager()
+        ->getStorage('node')
+        ->revisionIds($node);
+      $last_revision_id = end($revision_ids);
+      $last_revision = \Drupal::entityTypeManager()
+        ->getStorage('node')
+        ->loadRevision($last_revision_id);
+      $last_revision_state = $last_revision->get('moderation_state')
+        ->getString();
+
+      if ($last_revision_state !== $current_workflow_state
+        && $current_workflow_state === $to_state
+      ) {
+        $criteria = TRUE;
+      }
+    }
+  }
+  else {
+    if ($node->isPublished()) {
+      $criteria = TRUE;
+    }
+  }
+
+  if ($criteria === FALSE) {
+    return;
+  }
+
+  if ($checkSchedulerExists && $checkUnpublishedNodeType) {
     if ($always_push_out_time
       || empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
       $days = $content_notify_manager->getConfig('set_unpublish_time');
@@ -178,7 +215,7 @@ function content_notify_node_presave(EntityInterface $node) {
 
   // Old content notify.
   $checkOldNodeType = $content_notify_manager->checkNodeType('invalid', $node->getType());
-  if ($node->isPublished() && $checkOldNodeType) {
+  if ($checkOldNodeType) {
     $notify_invalid_time = $content_notify_manager->getConfig('notify_invalid_time');
     if ($always_push_out_time
       || empty($node->notify_invalid_on->value)
