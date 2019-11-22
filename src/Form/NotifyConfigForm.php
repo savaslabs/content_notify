@@ -150,11 +150,11 @@ class NotifyConfigForm extends ConfigFormBase {
       ];
 
       $form['notify']['notify_set_unpublish_time'] = [
-        '#title' => $this->t('Days from creation date to auto expire node'),
+        '#title' => $this->t('Days from creation date/published to auto expire node'),
         '#type' => 'number',
         '#field_suffix' => $this->t('Days'),
         '#default_value' => $config->get('notify_set_unpublish_time'),
-        '#description' => $this->t('if the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
+        '#description' => $this->t('Relates to setting: Use published date for calculations. If the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
       ];
 
       $form['notify']['notify_unpublish_time'] = [
