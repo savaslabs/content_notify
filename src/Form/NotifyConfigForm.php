@@ -53,29 +53,78 @@ class NotifyConfigForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
-
     $config = $this->config('content_notify.settings');
     if ($this->contentNotifyManager->checkSchedulerExists()) {
 
-      $form['debug'] = [
-        '#title' => $this->t('Enable debugging'),
-        '#description' => $this->t('Enable debug to override the default behavior. Do not deploy to production with this setting.'),
-        '#type' => 'checkbox',
-        '#default_value' => $config->get('debug'),
+      $form['invalid'] = [
+        '#title' => $this->t('Notify user of old content'),
+        '#description' => $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
+        '#type' => 'details',
+        '#collapsible' => TRUE,
+        '#collapsed' => TRUE,
       ];
 
-      $form['debug_last_cron_override'] = [
-        '#title' => $this->t('Last cron run override'),
-        '#description' => $this->t('Set when you want to pretend the last cron run was, for example -1days.'),
-        '#type' => 'textfield',
-        '#default_value' => $config->get('debug_last_cron_override'),
+      $form['invalid']['notify_invalid_bundles'] = [
+        '#title' => $this->t('Bundles to automatically send notification of old content about'),
+        '#type' => 'checkboxes',
+        '#options' => node_type_get_names(),
+        '#default_value' => $config->get('notify_invalid_bundles'),
+        '#description' => $this->t('On what bundles should we notify about old content.'),
       ];
 
-      $form['debug_current_time_override'] = [
-        '#title' => $this->t('Current time override'),
-        '#description' => $this->t('Set when you want to pretend to be another point in time, for example +155days.'),
+      $form['invalid']['notify_invalid_time'] = [
+        '#title' => $this->t('Days from publish date to set send mail about content validity.'),
+        '#type' => 'number',
+        '#field_suffix' => $this->t('Days'),
+        '#default_value' => $config->get('notify_invalid_time'),
+        '#description' => $this->t('How many days after publishing should a mail go out?.'),
+      ];
+
+      $form['invalid']['notify_invalid_time_2_offset'] = [
+        '#title' => $this->t('Second notification, days after first notification'),
+        '#type' => 'number',
+        '#field_suffix' => $this->t('Days'),
+        '#default_value' => $config->get('notify_invalid_time_2_offset'),
+        '#description' => $this->t('Leave blank for no second notifcation. To set a second notification, for example, if initial notification is 150 days, and want another notification at 165 days, 15 days later, enter: 15'),
+      ];
+
+      $form['invalid']['email_settings'] = [
+        '#type' => 'details',
+        '#description' => $this->t('Mail will always go as digest email with all nodes per specific user'),
+        '#title' => $this->t('Mail settings'),
+        '#collapsed' => FALSE,
+      ];
+      $form['invalid']['email_settings']['notify_invalid_digest_duration'] = [
+        '#title' => $this->t('Interval of digest email'),
+        '#type' => 'select',
+        '#options' => [
+          '0' => $this->t('Immediately'),
+          '7' => $this->t('Weekly'),
+          '30' => $this->t('Monthly'),
+        ],
+        '#default_value' => $config->get('notify_invalid_digest_duration'),
+        '#description' => $this->t('What should be interval of sending digest email.'),
+      ];
+
+      $form['invalid']['email_settings']['notify_invalid_receiver'] = [
+        '#title' => $this->t('Receiver email address for notification old content'),
+        '#type' => 'email',
+        '#default_value' => $config->get('notify_invalid_receiver'),
+        '#description' => $this->t('this email address will get notification. If you want content owner get email then leave this field empty'),
+      ];
+
+      $form['invalid']['email_settings']['notify_invalid_subject'] = [
+        '#title' => $this->t('Subject'),
         '#type' => 'textfield',
-        '#default_value' => $config->get('debug_current_time_override'),
+        '#default_value' => $config->get('notify_invalid_subject'),
+        '#description' => $this->t('What text should be sent as subject notification.'),
+      ];
+
+      $form['invalid']['email_settings']['notify_invalid_body'] = [
+        '#title' => $this->t('Body'),
+        '#type' => 'textarea',
+        '#default_value' => $config->get('notify_invalid_body'),
+        '#description' => $this->t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available'),
       ];
 
       $form['notify'] = [
@@ -138,13 +187,6 @@ class NotifyConfigForm extends ConfigFormBase {
       ];
     }
 
-    $form['ignore_translations'] = [
-      '#title' => $this->t('Ignore translations'),
-      '#description' => $this->t('Enable to ignore translations. (Recommended.)'),
-      '#type' => 'checkbox',
-      '#default_value' => $config->get('ignore_translations'),
-    ];
-
     $form['unpublish_date_warning'] = [
       '#title' => $this->t('Unpublish date warning'),
       '#type' => 'details',
@@ -173,75 +215,11 @@ class NotifyConfigForm extends ConfigFormBase {
       '#default_value' => $config->get('date_format'),
     ];
 
-    $form['invalid'] = [
-      '#title' => $this->t('Notify user of old content'),
-      '#description' => $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
-      '#type' => 'details',
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    ];
-
-    $form['invalid']['notify_invalid_bundles'] = [
-      '#title' => $this->t('Bundles to automatically send notification of old content about'),
-      '#type' => 'checkboxes',
-      '#options' => node_type_get_names(),
-      '#default_value' => $config->get('notify_invalid_bundles'),
-      '#description' => $this->t('On what bundles should we notify about old content.'),
-    ];
-
-    $form['invalid']['notify_invalid_time'] = [
-      '#title' => $this->t('Days from publish date to set send mail about content validity.'),
-      '#type' => 'number',
-      '#field_suffix' => $this->t('Days'),
-      '#default_value' => $config->get('notify_invalid_time'),
-      '#description' => $this->t('How many days after publishing should a mail go out?.'),
-    ];
-
-    $form['invalid']['notify_invalid_time_2_offset'] = [
-      '#title' => $this->t('Second notification, days after first notification'),
-      '#type' => 'number',
-      '#field_suffix' => $this->t('Days'),
-      '#default_value' => $config->get('notify_invalid_time_2_offset'),
-      '#description' => $this->t('Leave blank for no second notifcation. To set a second notification, for example, if initial notification is 150 days, and want another notification at 165 days, 15 days later, enter: 15'),
-    ];
-
-    $form['invalid']['email_settings'] = [
-      '#type' => 'details',
-      '#description' => $this->t('Mail will always go as digest email with all nodes per specific user'),
-      '#title' => $this->t('Mail settings'),
-      '#collapsed' => FALSE,
-    ];
-    $form['invalid']['email_settings']['notify_invalid_digest_duration'] = [
-      '#title' => $this->t('Interval of digest email'),
-      '#type' => 'select',
-      '#options' => [
-        '0' => $this->t('Immediately'),
-        '7' => $this->t('Weekly'),
-        '30' => $this->t('Monthly'),
-      ],
-      '#default_value' => $config->get('notify_invalid_digest_duration'),
-      '#description' => $this->t('What should be interval of sending digest email.'),
-    ];
-
-    $form['invalid']['email_settings']['notify_invalid_receiver'] = [
-      '#title' => $this->t('Receiver email address for notification old content'),
-      '#type' => 'email',
-      '#default_value' => $config->get('notify_invalid_receiver'),
-      '#description' => $this->t('this email address will get notification. If you want content owner get email then leave this field empty'),
-    ];
-
-    $form['invalid']['email_settings']['notify_invalid_subject'] = [
-      '#title' => $this->t('Subject'),
-      '#type' => 'textfield',
-      '#default_value' => $config->get('notify_invalid_subject'),
-      '#description' => $this->t('What text should be sent as subject notification.'),
-    ];
-
-    $form['invalid']['email_settings']['notify_invalid_body'] = [
-      '#title' => $this->t('Body'),
-      '#type' => 'textarea',
-      '#default_value' => $config->get('notify_invalid_body'),
-      '#description' => $this->t('What text should be sent as notification. Tokens [content-notify:digest-nodes] is only available'),
+    $form['ignore_translations'] = [
+      '#title' => $this->t('Ignore translations'),
+      '#description' => $this->t('Enable to ignore translations. (Recommended.)'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('ignore_translations'),
     ];
 
     $form['always_push_out_time'] = [
@@ -275,6 +253,36 @@ class NotifyConfigForm extends ConfigFormBase {
         '#description' => $this->t('Machine name, for example: published'),
       ];
     }
+
+
+    $form['debug_settings'] = [
+      '#title' => $this->t('Debug settings'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    ];
+
+    $form['debug_settings']['debug'] = [
+      '#title' => $this->t('Enable debugging'),
+      '#description' => $this->t('Enable debug to override the default behavior. Do not deploy to production with this setting. Effects evaluation of times, but not setting of times.'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('debug'),
+    ];
+
+    $form['debug_settings']['debug_last_cron_override'] = [
+      '#title' => $this->t('Last cron run override'),
+      '#description' => $this->t('Set when you want to pretend the last cron run was, for example -1days.'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('debug_last_cron_override'),
+    ];
+
+    $form['debug_settings']['debug_current_time_override'] = [
+      '#title' => $this->t('Current time override'),
+      '#description' => $this->t('Set when you want to pretend to be another point in time, for example +155days.'),
+      '#type' => 'textfield',
+      '#default_value' => $config->get('debug_current_time_override'),
+    ];
+
 
     $form['array_filter'] = ['#type' => 'value', '#value' => TRUE];
 
