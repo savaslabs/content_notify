@@ -142,11 +142,11 @@ class NotifyConfigForm extends ConfigFormBase {
         '#default_value' => $config->get('notify_unpublish_bundles'),
       ];
 
-      $form['notify']['set_unpublish_time'] = [
+      $form['notify']['notify_set_unpublish_time'] = [
         '#title' => $this->t('Days from creation date to auto expire node'),
         '#type' => 'number',
         '#field_suffix' => $this->t('Days'),
-        '#default_value' => $config->get('set_unpublish_time'),
+        '#default_value' => $config->get('notify_set_unpublish_time'),
         '#description' => $this->t('if the user does not actively set an unpublish date then you can set how many days from the creation of the node should auto expired? If user has set an unpublish date of the node then this value will not be used.'),
       ];
 
@@ -194,39 +194,39 @@ class NotifyConfigForm extends ConfigFormBase {
       '#collapsed' => TRUE,
     ];
 
-    $form['unpublish_date_warning']['include_unpublish_date_in_warning'] = [
+    $form['unpublish_date_warning']['notify_include_unpublish_date_in_warning'] = [
       '#title' => $this->t('Include unpublish date in warning regarding old content'),
       '#description' => $this->t('Enable to include date and time.'),
       '#type' => 'checkbox',
-      '#default_value' => $config->get('include_unpublish_date_in_warning'),
+      '#default_value' => $config->get('notify_include_unpublish_date_in_warning'),
     ];
 
-    $form['unpublish_date_warning']['unpublish_date_warning_text'] = [
+    $form['unpublish_date_warning']['notify_unpublish_date_warning_text'] = [
       '#title' => $this->t('Warning text'),
       '#description' => $this->t('Will prefix date and time. For example: scheduled to be auto-archived'),
       '#type' => 'textfield',
-      '#default_value' => $config->get('unpublish_date_warning_text'),
+      '#default_value' => $config->get('notify_unpublish_date_warning_text'),
     ];
 
-    $form['unpublish_date_warning']['date_format'] = [
+    $form['unpublish_date_warning']['notify_date_format'] = [
       '#title' => $this->t('Date format'),
       '#description' => $this->t('For example: F j Y H:i T'),
       '#type' => 'textfield',
-      '#default_value' => $config->get('date_format'),
+      '#default_value' => $config->get('notify_date_format'),
     ];
 
-    $form['ignore_translations'] = [
+    $form['notify_ignore_translations'] = [
       '#title' => $this->t('Ignore translations'),
       '#description' => $this->t('Enable to ignore translations. (Recommended.)'),
       '#type' => 'checkbox',
-      '#default_value' => $config->get('ignore_translations'),
+      '#default_value' => $config->get('notify_ignore_translations'),
     ];
 
-    $form['always_push_out_time'] = [
+    $form['notify_always_push_out_time'] = [
       '#title' => $this->t('Always extend out time'),
       '#description' => $this->t('When updating dates, update even if dates are already set.'),
       '#type' => 'checkbox',
-      '#default_value' => $config->get('always_push_out_time'),
+      '#default_value' => $config->get('notify_always_push_out_time'),
     ];
 
     $module_workflows_enabled = \Drupal::moduleHandler()
@@ -254,7 +254,6 @@ class NotifyConfigForm extends ConfigFormBase {
       ];
     }
 
-
     $form['debug_settings'] = [
       '#title' => $this->t('Debug settings'),
       '#type' => 'details',
@@ -262,27 +261,26 @@ class NotifyConfigForm extends ConfigFormBase {
       '#collapsed' => TRUE,
     ];
 
-    $form['debug_settings']['debug'] = [
+    $form['debug_settings']['notify_debug'] = [
       '#title' => $this->t('Enable debugging'),
       '#description' => $this->t('Enable debug to override the default behavior. Do not deploy to production with this setting. Effects evaluation of times, but not setting of times.'),
       '#type' => 'checkbox',
-      '#default_value' => $config->get('debug'),
+      '#default_value' => $config->get('notify_debug'),
     ];
 
-    $form['debug_settings']['debug_last_cron_override'] = [
+    $form['debug_settings']['notify_debug_last_cron_override'] = [
       '#title' => $this->t('Last cron run override'),
       '#description' => $this->t('Set when you want to pretend the last cron run was, for example -1days.'),
       '#type' => 'textfield',
-      '#default_value' => $config->get('debug_last_cron_override'),
+      '#default_value' => $config->get('notify_debug_last_cron_override'),
     ];
 
-    $form['debug_settings']['debug_current_time_override'] = [
+    $form['debug_settings']['notify_debug_current_time_override'] = [
       '#title' => $this->t('Current time override'),
       '#description' => $this->t('Set when you want to pretend to be another point in time, for example +155days.'),
       '#type' => 'textfield',
-      '#default_value' => $config->get('debug_current_time_override'),
+      '#default_value' => $config->get('notify_debug_current_time_override'),
     ];
-
 
     $form['array_filter'] = ['#type' => 'value', '#value' => TRUE];
 
@@ -302,12 +300,6 @@ class NotifyConfigForm extends ConfigFormBase {
     $values = $form_state->getValues();
 
     $this->config('content_notify.settings')
-      ->set('debug', $values['debug'])
-      ->set('debug_last_cron_override', $values['debug_last_cron_override'])
-      ->set('debug_current_time_override', $values['debug_current_time_override'])
-      ->save();
-
-    $this->config('content_notify.settings')
       ->set('notify_invalid_bundles', $notify_invalid_bundles)
       ->set('notify_invalid_digest_duration', $values['notify_invalid_digest_duration'])
       ->set('notify_invalid_receiver', $values['notify_invalid_receiver'])
@@ -315,13 +307,16 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_invalid_time_2_offset', $values['notify_invalid_time_2_offset'])
       ->set('notify_invalid_subject', $values['notify_invalid_subject'])
       ->set('notify_invalid_body', $values['notify_invalid_body'])
-      ->save();
-
-    $this->config('content_notify.settings')
-      ->set('ignore_translations', $values['ignore_translations'])
-      ->set('include_unpublish_date_in_warning', $values['include_unpublish_date_in_warning'])
-      ->set('date_format', $values['date_format'])
-      ->set('unpublish_date_warning_text', $values['unpublish_date_warning_text'])
+      ->set('notify_include_unpublish_date_in_warning', $values['notify_include_unpublish_date_in_warning'])
+      ->set('notify_date_format', $values['notify_date_format'])
+      ->set('notify_unpublish_date_warning_text', $values['notify_unpublish_date_warning_text'])
+      ->set('notify_ignore_translations', $values['notify_ignore_translations'])
+      ->set('notify_always_push_out_time', $values['notify_always_push_out_time'])
+      ->set('notify_workflow_use_transition_criteria', $values['notify_workflow_use_transition_criteria'])
+      ->set('notify_workflow_to_state', $values['notify_workflow_to_state'])
+      ->set('notify_debug', $values['notify_debug'])
+      ->set('notify_debug_last_cron_override', $values['notify_debug_last_cron_override'])
+      ->set('notify_debug_current_time_override', $values['notify_debug_current_time_override'])
       ->save();
 
     if ($this->contentNotifyManager->checkSchedulerExists()) {
@@ -331,15 +326,9 @@ class NotifyConfigForm extends ConfigFormBase {
         ->set('notify_unpublish_time', $values['notify_unpublish_time'])
         ->set('notify_unpublish_subject', $values['notify_unpublish_subject'])
         ->set('notify_unpublish_body', $values['notify_unpublish_body'])
-        ->set('set_unpublish_time', $values['set_unpublish_time'])
+        ->set('notify_set_unpublish_time', $values['notify_set_unpublish_time'])
         ->save();
     }
-
-    $this->config('content_notify.settings')
-      ->set('always_push_out_time', $values['always_push_out_time'])
-      ->set('notify_workflow_use_transition_criteria', $values['notify_workflow_use_transition_criteria'])
-      ->set('notify_workflow_to_state', $values['notify_workflow_to_state'])
-      ->save();
 
     parent::submitForm($form, $form_state);
   }

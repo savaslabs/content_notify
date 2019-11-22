@@ -142,7 +142,7 @@ function content_notify_node_presave(EntityInterface $node) {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
-  $ignore_translations = $content_notify_manager->getConfig('ignore_translations');
+  $ignore_translations = $content_notify_manager->getConfig('notify_ignore_translations');
 
   // If a translation of the node, return and do not save values.
   if ($ignore_translations
@@ -151,7 +151,7 @@ function content_notify_node_presave(EntityInterface $node) {
     return;
   }
 
-  $always_push_out_time = $content_notify_manager->getConfig('always_push_out_time');
+  $always_push_out_time = $content_notify_manager->getConfig('notify_always_push_out_time');
 
   // Unpublish notify.
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
@@ -197,7 +197,7 @@ function content_notify_node_presave(EntityInterface $node) {
   if ($checkSchedulerExists && $checkUnpublishedNodeType) {
     if ($always_push_out_time
       || empty($node->publish_on->value) && empty($node->unpublish_on->value)) {
-      $days = $content_notify_manager->getConfig('set_unpublish_time');
+      $days = $content_notify_manager->getConfig('notify_set_unpublish_time');
       if ($days) {
         $node->set('unpublish_on', date("U", strtotime("+" . $days . " days")));
         $node->unpublish_on->value = date("U", strtotime("+" . $days . " days"));
