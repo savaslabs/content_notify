@@ -56,6 +56,13 @@ class NotifyConfigForm extends ConfigFormBase {
     $config = $this->config('content_notify.settings');
     if ($this->contentNotifyManager->checkSchedulerExists()) {
 
+      $form['notify_base_on_published_date'] = [
+        '#title' => $this->t('Use published date for calculations'),
+        '#description' => $this->t('Use published date (or workflow transition if set). If not set, uses creation date.'),
+        '#type' => 'checkbox',
+        '#default_value' => $config->get('notify_base_on_published_date'),
+      ];
+
       $form['invalid'] = [
         '#title' => $this->t('Notify user of old content'),
         '#description' => $this->t('At creation of a node we automatically register a date in the future to remind the creator of the node to "check in" on the node to help the editor keep the site up to date.'),
@@ -300,6 +307,7 @@ class NotifyConfigForm extends ConfigFormBase {
     $values = $form_state->getValues();
 
     $this->config('content_notify.settings')
+      ->set('notify_base_on_published_date', $values['notify_base_on_published_date'])
       ->set('notify_invalid_bundles', $notify_invalid_bundles)
       ->set('notify_invalid_digest_duration', $values['notify_invalid_digest_duration'])
       ->set('notify_invalid_receiver', $values['notify_invalid_receiver'])

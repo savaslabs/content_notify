@@ -152,6 +152,7 @@ function content_notify_node_presave(EntityInterface $node) {
   }
 
   $always_push_out_time = $content_notify_manager->getConfig('notify_always_push_out_time');
+  $base_on_published_date = $content_notify_manager->getConfig('notify_base_on_published_date');
 
   // Unpublish notify.
   $checkSchedulerExists = $content_notify_manager->checkSchedulerExists();
@@ -220,7 +221,10 @@ function content_notify_node_presave(EntityInterface $node) {
     if ($always_push_out_time
       || empty($node->notify_invalid_on->value)
     ) {
-      $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days"));
+      $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days", $node->created->value));
+      if ($base_on_published_date) {
+        $notify_invalid_on = date("U", strtotime("+" . $notify_invalid_time . " days"));
+      }
       $node->set('notify_invalid_on', $notify_invalid_on);
     }
   }
