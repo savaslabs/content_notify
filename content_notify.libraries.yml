@@ -1,0 +1,5 @@
+content_notify:
+  version: VERSION
+  css:
+    theme:
+      css/content_notify.theme.css: {}

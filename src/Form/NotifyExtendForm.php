@@ -60,7 +60,7 @@ class NotifyExtendForm extends FormBase {
    * {@inheritdoc}
    */
   public function getFormId() {
-    return 'notify_extend';
+    return 'notify_extend-form';
   }
 
   /**
@@ -94,6 +94,9 @@ class NotifyExtendForm extends FormBase {
       '#value' => $this->t('Extend'),
       '#button_type' => 'primary',
     ];
+
+    $form['#attached']['library'][] = 'content_notify/content_notify';
+
     return $form;
   }
 
