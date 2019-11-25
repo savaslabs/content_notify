@@ -192,6 +192,17 @@ function content_notify_node_presave(EntityInterface $node) {
   }
 
   if ($criteria === FALSE) {
+    $sync_unpublish = $content_notify_manager->getConfig('notify_sync_unpublish_time');
+
+    // User might be manually setting notify times in the edit form.
+    // If they change the notify on time, they might expect the unpublish time
+    // to stay in sync.
+    if ($sync_unpublish) {
+      $notify_unpublish_time = $content_notify_manager->getConfig('notify_unpublish_time');
+      $notify_unpublish_on = $node->notify_unpublish_on->value;
+      $node->set('unpublish_on', date("U", strtotime("+" . $notify_unpublish_time . " days", $notify_unpublish_on)));
+    }
+
     return;
   }
 

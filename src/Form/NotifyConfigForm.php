@@ -165,6 +165,13 @@ class NotifyConfigForm extends ConfigFormBase {
         '#description' => $this->t('How many days before unpublishing a notification e-mail be sent to the user?'),
       ];
 
+      $form['notify']['notify_sync_unpublish_time'] = [
+        '#title' => $this->t('Keep unpublish in sync with notify unpublish'),
+        '#description' => $this->t('When manually editing the notify unpublish date, unpublish date can get out of sync. Alternative is to change the unpublish date separately.'),
+        '#type' => 'checkbox',
+        '#default_value' => $config->get('notify_sync_unpublish_time'),
+      ];
+
       $form['notify']['email_settings'] = [
         '#type' => 'details',
         '#description' => $this->t('Mail will always go as digest email with all nodes per specific user'),
@@ -332,6 +339,7 @@ class NotifyConfigForm extends ConfigFormBase {
         ->set('notify_unpublish_bundles', $notify_unpublish_bundles)
         ->set('notify_unpublish_receiver', $values['notify_unpublish_receiver'])
         ->set('notify_unpublish_time', $values['notify_unpublish_time'])
+        ->set('notify_sync_unpublish_time', $values['notify_sync_unpublish_time'])
         ->set('notify_unpublish_subject', $values['notify_unpublish_subject'])
         ->set('notify_unpublish_body', $values['notify_unpublish_body'])
         ->set('notify_set_unpublish_time', $values['notify_set_unpublish_time'])
