@@ -96,7 +96,6 @@ class ContentNotifyManager {
    * Notify unpublishing of nodes.
    */
   public function notifyUnpublished() {
-
     $bundles = $this->getConfig('notify_unpublish_bundles');
     $action = 'unpublish';
     if (!empty($bundles)) {
@@ -155,7 +154,6 @@ class ContentNotifyManager {
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
   public function processEmail(array $email_list, $action) {
-
     $params['subject'] = $this->getConfig('notify_' . $action . '_subject');
     $body = $this->getConfig('notify_' . $action . '_body');
     $langcode = $this->languageManager->getCurrentLanguage()->getId();
@@ -230,7 +228,6 @@ class ContentNotifyManager {
     $digest_nodes = $newline . implode($nodes, $newline);
     $body = str_replace('[content-notify:digest-nodes]', $digest_nodes, $body);
     return $body;
-
   }
 
   /**
@@ -255,14 +252,14 @@ class ContentNotifyManager {
    * @see hook_content_notify_digest_nodes_alter($link,$action)
    */
   public function processResult(array $results, $action) {
-    $include_date = $this->getConfig('include_unpublish_date_in_warning');
+    $include_date = $this->getConfig('notify_include_unpublish_date_in_warning');
 
-    $date_format = $this->getConfig('date_format');
+    $date_format = $this->getConfig('notify_date_format');
     if (empty($date_format)) {
       $date_format = 'F j Y H:i T';
     }
 
-    $warning_text = $this->getConfig('unpublish_date_warning_text');
+    $warning_text = $this->getConfig('notify_unpublish_date_warning_text');
     if (empty($warning_text)) {
       $warning_text = 'scheduled to be auto-archived';
     }
@@ -329,16 +326,12 @@ class ContentNotifyManager {
    *   properties: nid, vid, langcode, ...
    */
   public function getQuery(array $bundles, $action, $last_cron_run, $current_time, $offset = 0) {
-
-    /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
-    $content_notify_manager = \Drupal::service('content_notify.manager');
-
-    $debug = $content_notify_manager->getConfig('debug');
+    $debug = $this->getConfig('notify_debug');
 
     if ($debug) {
-      $debug_last_cron_override = $content_notify_manager->getConfig('debug_last_cron_override');
+      $debug_last_cron_override = $this->getConfig('notify_debug_last_cron_override');
       $last_cron_run = strtotime($debug_last_cron_override);
-      $debug_current_time_override = $content_notify_manager->getConfig('debug_current_time_override');
+      $debug_current_time_override = $this->getConfig('notify_debug_current_time_override');
       $current_time = strtotime($debug_current_time_override);
     }
 
@@ -353,10 +346,7 @@ class ContentNotifyManager {
       ->condition('n.' . 'status', 1)
       ->fields('n', ['nid', 'vid', 'langcode', 'notify_unpublish_on']);
 
-    /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
-    $content_notify_manager = \Drupal::service('content_notify.manager');
-
-    $ignore_translations = $content_notify_manager->getConfig('ignore_translations');
+    $ignore_translations = $this->getConfig('notify_ignore_translations');
 
     if ($ignore_translations) {
       $query->condition('n.' . 'default_langcode', 1);
@@ -380,7 +370,6 @@ class ContentNotifyManager {
    *   The action that needs to be checked. Can be 'unpublish' or 'invalid'.
    */
   public function getEmail(NodeInterface $node, $action) {
-
     $receiver = $this->getConfig('notify_' . $action . '_receiver');
     if (!empty($receiver)) {
       $email = $receiver;
