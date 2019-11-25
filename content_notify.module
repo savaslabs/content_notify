@@ -135,6 +135,125 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
 }
 
 /**
+ * Implements hook_preprocess_node().
+ */
+function content_notify_preprocess_node(&$variables) {
+  /** @var \Drupal\node\Entity\Node $node */
+  $node = $variables['node'];
+
+  $unpublish_on_unixtime = $node->unpublish_on->value;
+  $notify_invalid_on_unixtime = $node->notify_invalid_on->value;
+  $current_time = time();
+
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  $debug = $content_notify_manager->getConfig('notify_debug');
+
+  if ($debug) {
+    $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
+    $current_time = strtotime($debug_current_time_override);
+  }
+
+  if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
+    && $notify_invalid_on_unixtime < $current_time
+    && $node->isPublished()
+    && $node->isDefaultTranslation()
+  ) {
+    // Add button to extend unpublishing notifications.
+    // Do not use user entered values in the print string.
+
+    $notify_date_format = $content_notify_manager->getConfig('notify_date_format');
+    $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
+
+    if (in_array($node->bundle(), $bundles_to_unpublish)
+      && !empty($unpublish_on_unixtime)
+      && $current_time < $unpublish_on_unixtime
+    ) {
+      $eastern_time_zone = new \DateTimeZone('America/New_York');
+      $date_time = new \Datetime();
+      $date_time->setTimestamp($unpublish_on_unixtime);
+      $date_time->setTimezone($eastern_time_zone);
+      $unpublish_on_string = $date_time->format($notify_date_format);
+
+      $warning_text = $content_notify_manager->getConfig('notify_unpublish_warning_on_content');
+
+      $warning = $warning_text . ' ' . $unpublish_on_string;
+
+      \Drupal::messenger()->addWarning($warning);
+    }
+  }
+}
+
+
+/**
+ * Implements hook_entity_extra_field_info().
+ */
+function content_notify_entity_extra_field_info() {
+  $extra = [];
+
+  $description = t('Content notify extend form for nodes');
+  $label = t('Notify extend form');
+  $field_machine_name = 'notify_extend_form';
+
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
+  $bundles_to_warn_invalid = $content_notify_manager->getConfig('notify_invalid_bundles');
+  $bundles_any_notify = array_unique(array_merge($bundles_to_unpublish, $bundles_to_warn_invalid));
+
+  foreach ($bundles_any_notify as $bundle) {
+    $extra['node'][$bundle]['display'][$field_machine_name] = [
+      'label' => $label,
+      'description' => $description,
+      'weight' => -10,
+      'visible' => TRUE,
+    ];
+  }
+
+  return $extra;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for node entities.
+ *
+ * @see content_notify_entity_extra_field_info()
+ */
+function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInterface $entity, \Drupal\Core\Entity\Display\EntityViewDisplayInterface $display, $view_mode) {
+  // Only do the extra work if the component is configured to be displayed.
+  if ($display
+    ->getComponent('notify_extend_form')
+  ) {
+    $unpublish_on_unixtime = $entity->unpublish_on->value;
+    $notify_invalid_on_unixtime = $entity->notify_invalid_on->value;
+    $current_time = time();
+
+    /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+    $content_notify_manager = \Drupal::service('content_notify.manager');
+
+    $debug = $content_notify_manager->getConfig('notify_debug');
+
+    if ($debug) {
+      $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
+      $current_time = strtotime($debug_current_time_override);
+    }
+
+    if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
+      && $notify_invalid_on_unixtime < $current_time
+      && $entity->isPublished()
+      && $entity->isDefaultTranslation()
+    ) {
+      $build['notify_extend_form'] = \Drupal::formBuilder()
+        ->getForm(
+          'Drupal\content_notify\Form\NotifyExtendForm',
+          $entity->id()
+        );
+    }
+  }
+}
+
+/**
  * Implements hook_ENTITY_TYPE_presave() for node entities.
  */
 function content_notify_node_presave(EntityInterface $node) {

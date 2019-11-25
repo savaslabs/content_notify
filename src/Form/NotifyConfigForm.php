@@ -202,7 +202,7 @@ class NotifyConfigForm extends ConfigFormBase {
     }
 
     $form['unpublish_date_warning'] = [
-      '#title' => $this->t('Unpublish date warning'),
+      '#title' => $this->t('Email unpublish date warning'),
       '#type' => 'details',
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
@@ -227,6 +227,55 @@ class NotifyConfigForm extends ConfigFormBase {
       '#description' => $this->t('For example: F j Y H:i T'),
       '#type' => 'textfield',
       '#default_value' => $config->get('notify_date_format'),
+    ];
+
+    $form['node_unpublish_date_warning'] = [
+      '#title' => $this->t('Node unpublish date warning'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    ];
+
+    $form['node_unpublish_date_warning']['notify_include_unpublish_warning_on_content'] = [
+      '#title' => $this->t('Include unpublish date warning on old content'),
+      '#description' => $this->t('Enable to show a warning on nodes when between a notification going out, and the unpublish date.'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('notify_include_unpublish_warning_on_content'),
+    ];
+
+    $form['node_unpublish_date_warning']['notify_unpublish_warning_on_content'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Text for a warning about upcoming archival'),
+      '#description' => $this->t('When nearing archival date, this will show on the view tab of content. Example: Unless updated, this content will be auto-archived on:'),
+      '#default_value' => $config->get('notify_unpublish_warning_on_content'),
+    ];
+
+    $form['extend_settings'] = [
+      '#title' => $this->t('Extend settings'),
+      '#type' => 'details',
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+    ];
+
+    $form['extend_settings']['notify_extend_button_text'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Extend button text'),
+      '#description' => $this->t('When nearing archival date, for users with permision, an extend button will show on the view tab of content. Example button text: Extend'),
+      '#default_value' => $config->get('notify_extend_button_text'),
+    ];
+
+    $form['extend_settings']['notify_extend_button_instruction_text'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Extend button instructions'),
+      '#description' => $this->t('When the extend button is shown, this will show on the view tab of content. Example: If content is not up-to-date, create a new draft and go through approval workflow.'),
+      '#default_value' => $config->get('notify_extend_button_instruction_text'),
+    ];
+
+    $form['extend_settings']['notify_extend_days_default'] = [
+      '#type' => 'number',
+      '#title' => $this->t('Default for days to extend form'),
+      '#description' => $this->t('User can change this in the form, but this is the default value.'),
+      '#default_value' => $config->get('notify_extend_days_default'),
     ];
 
     $form['notify_ignore_translations'] = [
@@ -325,6 +374,12 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_include_unpublish_date_in_warning', $values['notify_include_unpublish_date_in_warning'])
       ->set('notify_date_format', $values['notify_date_format'])
       ->set('notify_unpublish_date_warning_text', $values['notify_unpublish_date_warning_text'])
+      ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
+      ->set('notify_include_unpublish_warning_on_content', $form_state->getValue('notify_include_unpublish_warning_on_content'))
+      ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
+      ->set('notify_extend_button_text', $form_state->getValue('notify_extend_button_text'))
+      ->set('notify_extend_button_instruction_text', $form_state->getValue('notify_extend_button_instruction_text'))
+      ->set('notify_extend_days_default', $form_state->getValue('notify_extend_days_default'))
       ->set('notify_ignore_translations', $values['notify_ignore_translations'])
       ->set('notify_always_push_out_time', $values['notify_always_push_out_time'])
       ->set('notify_workflow_use_transition_criteria', $values['notify_workflow_use_transition_criteria'])
