@@ -266,6 +266,14 @@ class ContentNotifyManager {
 
     $bundles_to_unpublish = $this->getConfig('notify_unpublish_bundles');
 
+    $debug = $this->getConfig('notify_debug');
+
+    $current_time = time();
+    if ($debug) {
+      $debug_current_time_override = $this->getConfig('notify_debug_current_time_override');
+      $current_time = strtotime($debug_current_time_override);
+    }
+
     $email_list = [];
 
     foreach ($results as $key => $result) {
@@ -283,7 +291,7 @@ class ContentNotifyManager {
       $node_url = Url::fromRoute('entity.node.canonical', ['node' => $node->id()], $options)
         ->toString();
 
-      $link = ' * ' . $translation->getTitle() . '<br> - ' . $node_url;
+      $link = ' * ' . $translation->getTitle() . '<br> - ' . '<a href="' . $node_url . '">' . $node_url . '</a>';
 
       if ($include_date
         && in_array($node->bundle(), $bundles_to_unpublish)
@@ -294,7 +302,16 @@ class ContentNotifyManager {
         $date_time->setTimestamp($result->notify_unpublish_on);
         $date_time->setTimezone($eastern_time_zone);
         $unpublish_date_string = $date_time->format($date_format);
-        $link .= "<br> - ($warning_text $unpublish_date_string)";
+        // 60 sec * 60 minutes * 24 hours to get seconds in a day.
+        $days = floor(($result->notify_unpublish_on - $current_time) / 86400);
+        $count_down_string = '';
+        if ($days == 1) {
+          $count_down_string = ", in $days day";
+        }
+        elseif ($days > 1) {
+          $count_down_string = ", in $days days";
+        }
+        $link .= "<br> - ($warning_text $unpublish_date_string" . "$count_down_string)";
       }
 
       $link .= '<p>';
