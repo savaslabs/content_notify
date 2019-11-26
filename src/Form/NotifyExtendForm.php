@@ -76,6 +76,14 @@ class NotifyExtendForm extends FormBase {
     $user = \Drupal::currentUser();
 
     $config = $this->config;
+
+    $extend_button_text = $config->get('notify_extend_button_text');
+    if (empty($extend_button_text)) {
+      $extend_button_text = $this->t('Extend');
+    }
+
+    $extend_button_instructions = $config->get('notify_extend_button_instruction_text');
+
     $days_default = $config->get('notify_extend_days_default');
 
     $form['#access'] = $user->hasPermission('content notification of nodes');
@@ -85,13 +93,13 @@ class NotifyExtendForm extends FormBase {
       '#type' => 'number',
       '#field_suffix' => $this->t('Days'),
       '#default_value' => $days_default,
-      '#description' => $this->t('This will extend the current dates stored for notifications and/or unpublishing.'),
+      '#description' => $this->t('This will extend the current dates stored for notifications and/or unpublishing.') . ' ' . $extend_button_instructions,
     ];
 
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
       '#type' => 'submit',
-      '#value' => $this->t('Extend'),
+      '#value' => $extend_button_text,
       '#button_type' => 'primary',
     ];
 

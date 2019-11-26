@@ -5,6 +5,7 @@
  * Content notify module functions.
  */
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -149,20 +150,19 @@ function content_notify_preprocess_node(&$variables) {
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
   $debug = $content_notify_manager->getConfig('notify_debug');
+  $include_unpublish_warning = $content_notify_manager->getConfig('notify_include_unpublish_warning_on_content');
 
   if ($debug) {
     $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
     $current_time = strtotime($debug_current_time_override);
   }
 
-  if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
+  if ( $include_unpublish_warning
+    && (!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
     && $notify_invalid_on_unixtime < $current_time
     && $node->isPublished()
     && $node->isDefaultTranslation()
   ) {
-    // Add button to extend unpublishing notifications.
-    // Do not use user entered values in the print string.
-
     $notify_date_format = $content_notify_manager->getConfig('notify_date_format');
     $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
 
@@ -233,13 +233,15 @@ function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInter
     $content_notify_manager = \Drupal::service('content_notify.manager');
 
     $debug = $content_notify_manager->getConfig('notify_debug');
+    $include_extend = $content_notify_manager->getConfig('notify_include_extend_on_content');
 
     if ($debug) {
       $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
       $current_time = strtotime($debug_current_time_override);
     }
 
-    if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
+    if ($include_extend
+      && (!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
       && $notify_invalid_on_unixtime < $current_time
       && $entity->isPublished()
       && $entity->isDefaultTranslation()
@@ -374,8 +376,20 @@ function content_notify_cron() {
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
+  $include_extend = $content_notify_manager->getConfig('notify_include_extend_on_content');
+  $include_unpublish_warning = $content_notify_manager->getConfig('notify_include_unpublish_warning_on_content');
+
   $content_notify_manager->notifyUnpublished();
   $content_notify_manager->notifyInvalid();
+
+  // Showing a warning (or not) and the extend button (or not) depend on the
+  // current time. So as time passes, invalidate the cache for nodes.
+  if ($include_unpublish_warning
+    || $include_extend
+  ) {
+    $tags = ['rendered'];
+    Cache::invalidateTags($tags);
+  }
 
   // Reset the static scheduler_cron flag.
   drupal_static_reset(__FUNCTION__);

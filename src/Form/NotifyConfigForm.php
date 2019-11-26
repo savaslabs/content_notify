@@ -2,6 +2,7 @@
 
 namespace Drupal\content_notify\Form;
 
+use Drupal\Core\Cache\Cache;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\content_notify\ContentNotifyManager;
@@ -257,10 +258,17 @@ class NotifyConfigForm extends ConfigFormBase {
       '#collapsed' => TRUE,
     ];
 
+    $form['extend_settings']['notify_include_extend_on_content'] = [
+      '#title' => $this->t('Include extend button on old content'),
+      '#description' => $this->t('Enable to show extend button, for users with permision to update notification dates, on the view tab of content.nodes when when nearing archival date (between a notification going out, and the unpublish date).'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('notify_include_extend_on_content'),
+    ];
+
     $form['extend_settings']['notify_extend_button_text'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Extend button text'),
-      '#description' => $this->t('When nearing archival date, for users with permision, an extend button will show on the view tab of content. Example button text: Extend'),
+      '#description' => $this->t(' Example button text: Extend'),
       '#default_value' => $config->get('notify_extend_button_text'),
     ];
 
@@ -377,6 +385,7 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
       ->set('notify_include_unpublish_warning_on_content', $form_state->getValue('notify_include_unpublish_warning_on_content'))
       ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
+      ->set('notify_include_extend_on_content', $form_state->getValue('notify_include_extend_on_content'))
       ->set('notify_extend_button_text', $form_state->getValue('notify_extend_button_text'))
       ->set('notify_extend_button_instruction_text', $form_state->getValue('notify_extend_button_instruction_text'))
       ->set('notify_extend_days_default', $form_state->getValue('notify_extend_days_default'))
@@ -399,6 +408,15 @@ class NotifyConfigForm extends ConfigFormBase {
         ->set('notify_unpublish_body', $values['notify_unpublish_body'])
         ->set('notify_set_unpublish_time', $values['notify_set_unpublish_time'])
         ->save();
+    }
+
+    // Showing a warning (or not) and the extend button (or not) depend on
+    // node rendered content depend on the settings.
+    if ($form_state->getValue('notify_include_unpublish_date_in_warning')
+      || $form_state->getValue('notify_include_extend_on_content')
+    ) {
+      $tags = ['rendered'];
+      Cache::invalidateTags($tags);
     }
 
     parent::submitForm($form, $form_state);
