@@ -10,6 +10,7 @@ use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
 use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\node\Entity\Node;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
 
@@ -136,14 +137,45 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
 }
 
 /**
- * Implements hook_preprocess_node().
+ * Returns if in window between notification and unpublishing.
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ * @param int $current_time
+ *   The time.
+ *
+ * @return bool
+ *   If in the window or not.
  */
-function content_notify_preprocess_node(&$variables) {
-  /** @var \Drupal\node\Entity\Node $node */
-  $node = $variables['node'];
-
+function content_notify_is_in_window(Node $node, $current_time) {
+  $in_window = FALSE;
   $unpublish_on_unixtime = $node->unpublish_on->value;
   $notify_invalid_on_unixtime = $node->notify_invalid_on->value;
+
+  if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
+    && $notify_invalid_on_unixtime < $current_time
+    && $node->isPublished()
+    && $node->isDefaultTranslation()
+  ) {
+    $in_window = TRUE;
+  }
+
+  return $in_window;
+}
+
+/**
+ * Generates unpublishing warning.
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ *
+ * @return string|null
+ *   NULL if no warning should show. Otherwise the warning string.
+ */
+function content_notify_generate_unpublish_warning($node) {
+  $warning = NULL;
+
+  $unpublish_on_unixtime = $node->unpublish_on->value;
   $current_time = time();
 
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
@@ -157,11 +189,8 @@ function content_notify_preprocess_node(&$variables) {
     $current_time = strtotime($debug_current_time_override);
   }
 
-  if ( $include_unpublish_warning
-    && (!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
-    && $notify_invalid_on_unixtime < $current_time
-    && $node->isPublished()
-    && $node->isDefaultTranslation()
+  if ($include_unpublish_warning
+    && content_notify_is_in_window($node, $current_time)
   ) {
     $notify_date_format = $content_notify_manager->getConfig('notify_date_format');
     $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
@@ -179,12 +208,39 @@ function content_notify_preprocess_node(&$variables) {
       $warning_text = $content_notify_manager->getConfig('notify_unpublish_warning_on_content');
 
       $warning = $warning_text . ' ' . $unpublish_on_string;
-
-      \Drupal::messenger()->addWarning($warning);
     }
   }
+
+  return $warning;
 }
 
+/**
+ * Puts message in html markup.
+ *
+ * @param string $message
+ *   The message.
+ *
+ * @return string
+ *   The markup.
+ */
+function content_notify_markup_warning($message) {
+  $markup = '';
+
+  $markup .= '
+<div>
+    <div role="contentinfo" aria-label="Warning message" class="messages messages--warning">
+        <h2 class="visually-hidden">Warning message</h2>
+        <ul class="messages__list">
+            <li class="messages__item">';
+  $markup .= $message;
+  $markup .= '
+            </li>
+        </ul>
+    </div>
+</div>';
+
+  return $markup;
+}
 
 /**
  * Implements hook_entity_extra_field_info().
@@ -208,6 +264,19 @@ function content_notify_entity_extra_field_info() {
       'label' => $label,
       'description' => $description,
       'weight' => -10,
+      'visible' => TRUE,
+    ];
+  }
+
+  $description = t('Content notify unpublish warning for nodes');
+  $label = t('Notify unpublish warning');
+  $field_machine_name = 'notify_unpublish_warning';
+
+  foreach ($bundles_to_unpublish as $bundle) {
+    $extra['node'][$bundle]['display'][$field_machine_name] = [
+      'label' => $label,
+      'description' => $description,
+      'weight' => -15,
       'visible' => TRUE,
     ];
   }
@@ -241,16 +310,23 @@ function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInter
     }
 
     if ($include_extend
-      && (!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
-      && $notify_invalid_on_unixtime < $current_time
-      && $entity->isPublished()
-      && $entity->isDefaultTranslation()
+      && content_notify_is_in_window($entity, $current_time)
     ) {
       $build['notify_extend_form'] = \Drupal::formBuilder()
         ->getForm(
           'Drupal\content_notify\Form\NotifyExtendForm',
           $entity->id()
         );
+    }
+  }
+
+  if ($display
+    ->getComponent('notify_unpublish_warning')
+  ) {
+    $warning = content_notify_generate_unpublish_warning($entity);
+    if ($warning) {
+      $build['#attached']['library'][] = 'seven/messages';
+      $build['notify_unpublish_warning']['#markup'] = content_notify_markup_warning($warning);
     }
   }
 }
