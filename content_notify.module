@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Cache\Cache;
+use Drupal\Core\Datetime\DrupalDateTime;
 use Drupal\Core\Routing\RouteMatchInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\Core\Field\BaseFieldDefinition;
@@ -68,7 +69,6 @@ function content_notify_entity_base_field_info(EntityTypeInterface $entity_type)
  * Implements hook_form_FORM_ID_alter() for node_form().
  */
 function content_notify_form_node_form_alter(&$form, FormStateInterface $form_state) {
-
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
   $hide_unpublish = FALSE;
@@ -164,6 +164,34 @@ function content_notify_is_in_window(Node $node, $current_time) {
 }
 
 /**
+ * Converts unixtime to date string.
+ *
+ * @param int $unixtime
+ *   Unix time.
+ *
+ * @return string
+ *   Date string.
+ */
+function content_notify_convert_unixtime_date_string($unixtime) {
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  $date_format = $content_notify_manager->getConfig('notify_date_format');
+
+  if (empty($date_format)) {
+    $date_format = 'F j Y H:i T';
+  }
+
+  $eastern_time_zone = new \DateTimeZone('America/New_York');
+  $date_time = new \Datetime();
+  $date_time->setTimestamp($unixtime);
+  $date_time->setTimezone($eastern_time_zone);
+  $date_string = $date_time->format($date_format);
+
+  return $date_string;
+}
+
+/**
  * Generates unpublishing warning.
  *
  * @param \Drupal\node\Entity\Node $node
@@ -192,18 +220,13 @@ function content_notify_generate_unpublish_warning($node) {
   if ($include_unpublish_warning
     && content_notify_is_in_window($node, $current_time)
   ) {
-    $notify_date_format = $content_notify_manager->getConfig('notify_date_format');
     $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
 
     if (in_array($node->bundle(), $bundles_to_unpublish)
       && !empty($unpublish_on_unixtime)
       && $current_time < $unpublish_on_unixtime
     ) {
-      $eastern_time_zone = new \DateTimeZone('America/New_York');
-      $date_time = new \Datetime();
-      $date_time->setTimestamp($unpublish_on_unixtime);
-      $date_time->setTimezone($eastern_time_zone);
-      $unpublish_on_string = $date_time->format($notify_date_format);
+      $unpublish_on_string = content_notify_convert_unixtime_date_string($unpublish_on_unixtime);
 
       $warning_text = $content_notify_manager->getConfig('notify_unpublish_warning_on_content');
 
@@ -332,9 +355,60 @@ function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInter
 }
 
 /**
+ * Converts DrupalDateTime to unixtime in node.
+ *
+ * For compatibility with contrib module bulk_update_fields that uses
+ * DrupalDateTime look for those in the node object and set to unixtime.
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ */
+function content_notify_convert_datetime_unixtime(Node &$node) {
+  $bulk_update = FALSE;
+  $field_strings = [];
+  $user = \Drupal::currentUser();
+
+  /** @var \Drupal\Core\Datetime\DrupalDateTime $datetime */
+  if ($node->unpublish_on->value instanceof DrupalDateTime) {
+    $datetime = $node->unpublish_on->value;
+    $unixtime = $datetime->getTimestamp();
+    $node->unpublish_on->value = $unixtime;
+    $bulk_update = TRUE;
+    $field_strings[] = 'unpublish_on';
+    $date_strings[] = content_notify_convert_unixtime_date_string($unixtime);
+  }
+  if ($node->notify_unpublish_on->value instanceof DrupalDateTime) {
+    $datetime = $node->notify_unpublish_on->value;
+    $unixtime = $datetime->getTimestamp();
+    $node->notify_unpublish_on->value = $unixtime;
+    $bulk_update = TRUE;
+    $field_strings[] = 'notify_unpublish_on';
+    $date_strings[] = content_notify_convert_unixtime_date_string($unixtime);
+  }
+  if ($node->notify_invalid_on->value instanceof DrupalDateTime) {
+    $datetime = $node->notify_invalid_on->value;
+    $unixtime = $datetime->getTimestamp();
+    $node->notify_invalid_on->value = $unixtime;
+    $bulk_update = TRUE;
+    $field_strings[] = 'notify_invalid_on';
+    $date_strings[] = content_notify_convert_unixtime_date_string($unixtime);
+  }
+
+  if ($bulk_update) {
+    $node->setRevisionCreationTime(time());
+    $fields = implode(', ', $field_strings);
+    $dates = implode(', ', $date_strings);
+    $revision_log_message = "Bulk update of $fields field(s) to $dates.";
+    $node->setRevisionLogMessage($revision_log_message);
+    $node->setRevisionUserId($user->id());
+  }
+}
+
+/**
  * Implements hook_ENTITY_TYPE_presave() for node entities.
  */
 function content_notify_node_presave(EntityInterface $node) {
+  content_notify_convert_datetime_unixtime($node);
 
   /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
   $content_notify_manager = \Drupal::service('content_notify.manager');
@@ -493,7 +567,6 @@ function content_notify_cron_is_running() {
  * Implements hook_mail().
  */
 function content_notify_mail($key, &$message, $params) {
-
   $message['from'] = \Drupal::config('system.site')->get('mail');
   $message['headers']['Content-Type'] = 'text/html; charset=UTF-8; format=flowed; delsp=yes';
 

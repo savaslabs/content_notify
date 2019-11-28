@@ -254,11 +254,6 @@ class ContentNotifyManager {
   public function processResult(array $results, $action) {
     $include_date = $this->getConfig('notify_include_unpublish_date_in_warning');
 
-    $date_format = $this->getConfig('notify_date_format');
-    if (empty($date_format)) {
-      $date_format = 'F j Y H:i T';
-    }
-
     $warning_text = $this->getConfig('notify_unpublish_date_warning_text');
     if (empty($warning_text)) {
       $warning_text = 'scheduled to be auto-archived';
@@ -297,11 +292,7 @@ class ContentNotifyManager {
         && in_array($node->bundle(), $bundles_to_unpublish)
         && !empty($result->notify_unpublish_on)
       ) {
-        $eastern_time_zone = new \DateTimeZone('America/New_York');
-        $date_time = new \Datetime();
-        $date_time->setTimestamp($result->notify_unpublish_on);
-        $date_time->setTimezone($eastern_time_zone);
-        $unpublish_date_string = $date_time->format($date_format);
+        $unpublish_date_string = content_notify_convert_unixtime_date_string($result->notify_unpublish_on);
         // 60 sec * 60 minutes * 24 hours to get seconds in a day.
         $days = floor(($result->notify_unpublish_on - $current_time) / 86400);
         $count_down_string = '';
