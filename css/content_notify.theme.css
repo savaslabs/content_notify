@@ -8,3 +8,9 @@
   border: 1px dashed #bbb;
   background: #fff;
 }
+
+/* Hide with css instead of adding a module or custom field type to show
+  description only. The form element does not need to be accessible. */
+#edit-extend-days-simple {
+  display: none;
+}

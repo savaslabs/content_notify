@@ -4,3 +4,6 @@ administer content notification:
 content notification of nodes:
   title: 'Content notification of nodes'
   description: 'Allows users to set a date for content notification'
+content notification simple extend:
+  title: 'Content notification simple extend button'
+  description: 'Allows users to extend dates by the default configured amount of days, even if they do not have the "Content notification of nodes" permission to manually set the dates.'

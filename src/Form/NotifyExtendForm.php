@@ -86,7 +86,14 @@ class NotifyExtendForm extends FormBase {
 
     $days_default = $config->get('notify_extend_days_default');
 
-    $form['#access'] = $user->hasPermission('content notification of nodes');
+    $user_has_simple_extend_and_edit = (
+      $user->hasPermission('content notification simple extend')
+      && $this->node
+        ->access('update', $user)
+    );
+    $user_content_notification_admin = $user->hasPermission('content notification of nodes');
+    $form['#access'] = $user_content_notification_admin
+      || $user_has_simple_extend_and_edit;
 
     $form['extend_days'] = [
       '#title' => $this->t(''),
@@ -94,7 +101,22 @@ class NotifyExtendForm extends FormBase {
       '#field_suffix' => $this->t('Days'),
       '#default_value' => $days_default,
       '#description' => $this->t('This will extend the current dates stored for notifications and/or unpublishing.') . ' ' . $extend_button_instructions,
+      '#access' => $user_content_notification_admin,
     ];
+
+    if (!$user_content_notification_admin
+      && $user_has_simple_extend_and_edit
+    ) {
+      $form['extend_days_simple'] = [
+        '#type' => 'number', // @see content_notify.theme.css
+        '#attributes' => array('readonly' => 'readonly'),
+        '#description' => $this->t('Extending will add @days days to the current notification dates.',
+            [
+              '@days' => $days_default,
+            ])
+          . ' ' . $extend_button_instructions,
+      ];
+    }
 
     $form['actions'] = ['#type' => 'actions'];
     $form['actions']['submit'] = [
@@ -152,7 +174,7 @@ class NotifyExtendForm extends FormBase {
 
     $entity->save();
 
-    $this->messenger()->addStatus($this->t("The notifications and auto-archive have been extended $days_input days."));
+    $this->messenger()->addStatus($this->t("The notifications dates have been extended $days_input days."));
   }
 
 }
