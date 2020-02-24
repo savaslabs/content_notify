@@ -108,8 +108,7 @@ class NotifyExtendForm extends FormBase {
       && $user_has_simple_extend_and_edit
     ) {
       $form['extend_days_simple'] = [
-        '#type' => 'number', // @see content_notify.theme.css
-        '#attributes' => array('readonly' => 'readonly'),
+        '#type' => 'item',
         '#description' => $this->t('Extending will add @days days to the current notification dates.',
             [
               '@days' => $days_default,
