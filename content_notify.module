@@ -152,12 +152,24 @@ function content_notify_is_in_window(Node $node, $current_time) {
   $unpublish_on_unixtime = $node->unpublish_on->value;
   $notify_invalid_on_unixtime = $node->notify_invalid_on->value;
 
-  if ((!empty($unpublish_on_unixtime) || !empty($notify_invalid_on_unixtime))
-    && $notify_invalid_on_unixtime < $current_time
-    && $node->isPublished()
-    && $node->isDefaultTranslation()
+  if (!empty($notify_invalid_on_unixtime)
+    && ($notify_invalid_on_unixtime < $current_time)
   ) {
-    $in_window = TRUE;
+    if (!empty($unpublish_on_unixtime)
+      // If data gets messed up, the unpublish time might be before the notify
+      // time. So when checking if in "the window" only check if the unpublish
+      // time is after the notify time.
+      && ($notify_invalid_on_unixtime < $unpublish_on_unixtime)
+    ) {
+      if ($unpublish_on_unixtime > $current_time) {
+        $in_window = TRUE;
+      }
+    }
+    else {
+      // If there is no unpublish_on time set after the notify time, assume is
+      // in "the window" even though there is no end to the window.
+      $in_window = TRUE;
+    }
   }
 
   return $in_window;
@@ -180,8 +192,6 @@ function content_notify_is_after_unpublish(Node $node, $current_time) {
 
   if (!empty($unpublish_on_unixtime)
     && $unpublish_on_unixtime < $current_time
-    && $node->isPublished()
-    && $node->isDefaultTranslation()
   ) {
     $after_unpublish = TRUE;
   }
@@ -227,42 +237,8 @@ function content_notify_convert_unixtime_date_string($unixtime) {
  *   NULL if no warning should show. Otherwise the warning string.
  */
 function content_notify_generate_unpublish_warning($node) {
-  $warning = NULL;
-
-  $unpublish_on_unixtime = $node->unpublish_on->value;
-  $current_time = time();
-
-  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
-  $content_notify_manager = \Drupal::service('content_notify.manager');
-
-  $debug = $content_notify_manager->getConfig('notify_debug');
-  $include_unpublish_warning = $content_notify_manager->getConfig('notify_include_unpublish_warning_on_content');
-
-  if ($debug) {
-    $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
-    $current_time = strtotime($debug_current_time_override);
-  }
-
-  if ($include_unpublish_warning
-    && content_notify_is_in_window($node, $current_time)
-  ) {
-    $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
-
-    if (in_array($node->bundle(), $bundles_to_unpublish)
-      && !empty($unpublish_on_unixtime)
-      && $current_time < $unpublish_on_unixtime
-    ) {
-      $unpublish_on_string = content_notify_convert_unixtime_date_string($unpublish_on_unixtime);
-
-      $warning_text = $content_notify_manager->getConfig('notify_unpublish_warning_on_content');
-
-      $warning = $warning_text . ' ' . $unpublish_on_string;
-    }
-  }
-
-  return $warning;
+  return content_notify_generate_message($node, 'warning');
 }
-
 
 /**
  * Generates past unpublishing alert message.
@@ -274,7 +250,41 @@ function content_notify_generate_unpublish_warning($node) {
  *   NULL if no message should show. Otherwise the message string.
  */
 function content_notify_generate_unpublish_alert($node) {
+  return content_notify_generate_message($node, 'alert_past_unpublish');
+}
+
+/**
+ * Generates message.
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ *
+ * @param string $type
+ *   The type of message. Possible values: 'warning', 'alert_past_unpublish'.
+ *
+ * @return string|null
+ *   NULL if no message should show. Otherwise the message string.
+ */
+function content_notify_generate_message($node, $type) {
   $message = NULL;
+
+  switch ($type) {
+
+    case 'warning':
+      $config_message_enable = 'notify_include_unpublish_warning_on_content';
+      $config_message_text = 'notify_unpublish_warning_on_content';
+      $in_time_period_function = 'content_notify_is_in_window';
+      break;
+
+    case 'alert_past_unpublish':
+      $config_message_enable = 'notify_include_unpublish_alert_on_content';
+      $config_message_text = 'notify_unpublish_alert_on_content';
+      $in_time_period_function = 'content_notify_is_after_unpublish';
+      break;
+
+    default:
+      return $message;
+  }
 
   $unpublish_on_unixtime = $node->unpublish_on->value;
   $current_time = time();
@@ -283,27 +293,32 @@ function content_notify_generate_unpublish_alert($node) {
   $content_notify_manager = \Drupal::service('content_notify.manager');
 
   $debug = $content_notify_manager->getConfig('notify_debug');
-  $include_unpublish_alert = $content_notify_manager->getConfig('notify_include_unpublish_alert_on_content');
+  $include_message = $content_notify_manager->getConfig($config_message_enable);
 
   if ($debug) {
     $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
     $current_time = strtotime($debug_current_time_override);
   }
 
-  if ($include_unpublish_alert
-    && content_notify_is_after_unpublish($node, $current_time)
+  if ($include_message
+    // Assumption is messages should only show on published source language.
+    && $node->isPublished()
+    && $node->isDefaultTranslation()
   ) {
-    $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
+    $in_time_period = call_user_func($in_time_period_function, $node, $current_time);
 
-    if (in_array($node->bundle(), $bundles_to_unpublish)
-      && !empty($unpublish_on_unixtime)
-      && $current_time > $unpublish_on_unixtime
-    ) {
-      $unpublish_on_string = content_notify_convert_unixtime_date_string($unpublish_on_unixtime);
+    if ($in_time_period) {
+      $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
 
-      $message_text = $content_notify_manager->getConfig('notify_unpublish_alert_on_content');
+      if (in_array($node->bundle(), $bundles_to_unpublish)
+        && !empty($unpublish_on_unixtime)
+      ) {
+        $unpublish_on_string = content_notify_convert_unixtime_date_string($unpublish_on_unixtime);
 
-      $message = $message_text . ' ' . $unpublish_on_string;
+        $message_text = $content_notify_manager->getConfig($config_message_text);
+
+        $message = $message_text . ' ' . $unpublish_on_string;
+      }
     }
   }
 
@@ -434,7 +449,11 @@ function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInter
     }
 
     if ($include_extend
-      && content_notify_is_in_window($entity, $current_time)
+      && $entity->isPublished()
+      && $entity->isDefaultTranslation()
+      && (content_notify_is_in_window($entity, $current_time)
+        || content_notify_is_after_unpublish($entity, $current_time)
+      )
     ) {
       $build['notify_extend_form'] = \Drupal::formBuilder()
         ->getForm(
