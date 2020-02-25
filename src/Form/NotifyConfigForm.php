@@ -251,6 +251,20 @@ class NotifyConfigForm extends ConfigFormBase {
       '#default_value' => $config->get('notify_unpublish_warning_on_content'),
     ];
 
+    $form['node_unpublish_date_warning']['notify_include_unpublish_alert_on_content'] = [
+      '#title' => $this->t('Include unpublish date alert on old content past its unpublish date'),
+      '#description' => $this->t('Enable to show an alert on published nodes when after the unpublish date, useful if unpublishing is not happening.'),
+      '#type' => 'checkbox',
+      '#default_value' => $config->get('notify_include_unpublish_alert_on_content'),
+    ];
+
+    $form['node_unpublish_date_warning']['notify_unpublish_alert_on_content'] = [
+      '#type' => 'textfield',
+      '#title' => $this->t('Text for an alert if published but past the unpublish date'),
+      '#description' => $this->t('When past archival date, this will show on the view tab of content. Example: This content is past its archive date of:'),
+      '#default_value' => $config->get('notify_unpublish_alert_on_content'),
+    ];
+
     $form['extend_settings'] = [
       '#title' => $this->t('Extend settings'),
       '#type' => 'details',
@@ -385,6 +399,8 @@ class NotifyConfigForm extends ConfigFormBase {
       ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
       ->set('notify_include_unpublish_warning_on_content', $form_state->getValue('notify_include_unpublish_warning_on_content'))
       ->set('notify_unpublish_warning_on_content', $form_state->getValue('notify_unpublish_warning_on_content'))
+      ->set('notify_include_unpublish_alert_on_content', $form_state->getValue('notify_include_unpublish_alert_on_content'))
+      ->set('notify_unpublish_alert_on_content', $form_state->getValue('notify_unpublish_alert_on_content'))
       ->set('notify_include_extend_on_content', $form_state->getValue('notify_include_extend_on_content'))
       ->set('notify_extend_button_text', $form_state->getValue('notify_extend_button_text'))
       ->set('notify_extend_button_instruction_text', $form_state->getValue('notify_extend_button_instruction_text'))

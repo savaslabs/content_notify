@@ -137,7 +137,7 @@ function content_notify_form_node_form_alter(&$form, FormStateInterface $form_st
 }
 
 /**
- * Returns if in window between notification and unpublishing.
+ * Returns if in the time window between notification and unpublishing dates.
  *
  * @param \Drupal\node\Entity\Node $node
  *   The node.
@@ -161,6 +161,32 @@ function content_notify_is_in_window(Node $node, $current_time) {
   }
 
   return $in_window;
+}
+
+/**
+ * Returns if after the unpublish date (after the window).
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ * @param int $current_time
+ *   The time.
+ *
+ * @return bool
+ *   If after the unpublish date or not.
+ */
+function content_notify_is_after_unpublish(Node $node, $current_time) {
+  $after_unpublish = FALSE;
+  $unpublish_on_unixtime = $node->unpublish_on->value;
+
+  if (!empty($unpublish_on_unixtime)
+    && $unpublish_on_unixtime < $current_time
+    && $node->isPublished()
+    && $node->isDefaultTranslation()
+  ) {
+    $after_unpublish = TRUE;
+  }
+
+  return $after_unpublish;
 }
 
 /**
@@ -237,6 +263,53 @@ function content_notify_generate_unpublish_warning($node) {
   return $warning;
 }
 
+
+/**
+ * Generates past unpublishing alert message.
+ *
+ * @param \Drupal\node\Entity\Node $node
+ *   The node.
+ *
+ * @return string|null
+ *   NULL if no message should show. Otherwise the message string.
+ */
+function content_notify_generate_unpublish_alert($node) {
+  $message = NULL;
+
+  $unpublish_on_unixtime = $node->unpublish_on->value;
+  $current_time = time();
+
+  /** @var \Drupal\content_notify\ContentNotifyManager $content_notify_manager */
+  $content_notify_manager = \Drupal::service('content_notify.manager');
+
+  $debug = $content_notify_manager->getConfig('notify_debug');
+  $include_unpublish_alert = $content_notify_manager->getConfig('notify_include_unpublish_alert_on_content');
+
+  if ($debug) {
+    $debug_current_time_override = $content_notify_manager->getConfig('notify_debug_current_time_override');
+    $current_time = strtotime($debug_current_time_override);
+  }
+
+  if ($include_unpublish_alert
+    && content_notify_is_after_unpublish($node, $current_time)
+  ) {
+    $bundles_to_unpublish = $content_notify_manager->getConfig('notify_unpublish_bundles');
+
+    if (in_array($node->bundle(), $bundles_to_unpublish)
+      && !empty($unpublish_on_unixtime)
+      && $current_time > $unpublish_on_unixtime
+    ) {
+      $unpublish_on_string = content_notify_convert_unixtime_date_string($unpublish_on_unixtime);
+
+      $message_text = $content_notify_manager->getConfig('notify_unpublish_alert_on_content');
+
+      $message = $message_text . ' ' . $unpublish_on_string;
+    }
+  }
+
+  return $message;
+}
+
 /**
  * Puts message in html markup.
  *
@@ -253,6 +326,34 @@ function content_notify_markup_warning($message) {
 <div>
     <div role="contentinfo" aria-label="Warning message" class="messages messages--warning">
         <h2 class="visually-hidden">Warning message</h2>
+        <ul class="messages__list">
+            <li class="messages__item">';
+  $markup .= $message;
+  $markup .= '
+            </li>
+        </ul>
+    </div>
+</div>';
+
+  return $markup;
+}
+
+/**
+ * Puts message in html markup, for an alert.
+ *
+ * @param string $message
+ *   The message.
+ *
+ * @return string
+ *   The markup.
+ */
+function content_notify_markup_alert($message) {
+  $markup = '';
+
+  $markup .= '
+<div>
+    <div role="contentinfo" aria-label="Alert message" class="messages messages--error">
+        <h2 class="visually-hidden">Alert message</h2>
         <ul class="messages__list">
             <li class="messages__item">';
   $markup .= $message;
@@ -350,6 +451,13 @@ function content_notify_node_view(array &$build, \Drupal\Core\Entity\EntityInter
     if ($warning) {
       $build['#attached']['library'][] = 'seven/messages';
       $build['notify_unpublish_warning']['#markup'] = content_notify_markup_warning($warning);
+    }
+    else {
+      $alert_past_unpublish = content_notify_generate_unpublish_alert($entity);
+      if ($alert_past_unpublish) {
+        $build['#attached']['library'][] = 'seven/messages';
+        $build['notify_unpublish_warning']['#markup'] = content_notify_markup_alert($alert_past_unpublish);
+      }
     }
   }
 }
